@@ -2,5 +2,8 @@
 /*
 !.gitignore
 
+# 2. Unignore the .config folder (but ignore its immediate contents)
+!.config/
+.config/*
+
 !.config/hypr/
-!.config/hypr/**
