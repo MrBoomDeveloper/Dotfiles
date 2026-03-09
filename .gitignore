@@ -6,4 +6,12 @@
 !.config/
 .config/*
 
+# Include some stuff
 !.config/hypr/
+!.config/kitty/kitty.conf
+!.config/rofi/
+!.config/scripts/
+!.config/waybar/
+!.config/waypaper/
+!.config/wlogout/
+!.floorp/p2503pa8.default-default/chrome/

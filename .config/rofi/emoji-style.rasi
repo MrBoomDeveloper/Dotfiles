@@ -1,0 +1,127 @@
+/* Variables */
+* {
+	background: #140c13;
+	primary: #facff3;
+}
+
+/* Configuration */
+configuration {
+	modi: "drun";
+	scroll-method: 1;
+	transient-window: true;
+
+	tokenize: true;
+	matching: "normal";
+	drun-match-fields: "name";
+
+	show-icons: true;
+
+	display-combi: "";
+	display-filebrowser: "";
+	display-window: "Windows";
+
+	combi-display-format: "{text}";
+        drun-display-format: "{name}";
+	window-format: "{w} {c} {t}";
+}
+
+window {
+	transparency: "real";
+	location: center;
+	anchor: center;
+	fullscreen: false;
+	width: 600px;
+    	border: 1px solid;
+	border-radius: 8px;
+	border-color: @primary;
+	cursor: "default";
+	background-color: rgba(20, 12, 19, 0.75);
+}
+
+mainbox {
+	background-color: transparent;
+	children: [ "inputbar", "listview" ];
+}
+
+inputbar {
+	spacing: 24px;
+	padding: 16px 24px;
+	border: 0px 0px 1px 0px;
+	border-color: @primary;
+	background-color: transparent;
+	text-color: @primary;
+	children: [ "prompt", "entry" ];
+}
+
+prompt {
+	margin: 0 3px;
+    border:                      0px 1px 0px 0px;
+    border-radius:               0px;
+    border-color:                @alternate-background;
+    background-color:            transparent;
+    text-color:                  inherit;
+}
+
+entry {
+	background-color: transparent;
+	text-color: inherit;
+	cursor: text;
+	placeholder: "Search anything...";
+	placeholder-color: #6a4564;
+	cursor-width: 2px;
+	hide-cursor-on-empty: true;
+}
+
+/*****----- Listview -----*****/
+listview {
+	columns: 10;
+	lines: 10;
+	cycle: true;
+	dynamic: true;
+	scrollbar: true;
+	layout: vertical;
+	fixed-height: false;
+	fixed-columns: false;
+	background-color: transparent;
+}
+
+scrollbar {
+	margin: 1px;
+	handle-width: 1px;
+	handle-color: @primary;
+	border-radius: 0px;
+	background-color: transparent;
+}
+
+element {
+	spacing: 16px;
+	padding: 8px 16px;
+	background-color: transparent;
+	text-color: @primary;
+	cursor: pointer;
+	children: [ element-icon, element-text ];
+}
+
+element.active {
+	background-color: #442840;
+}
+
+element.selected {
+	background-color: @primary;
+	text-color: @background;
+}
+
+element-icon {
+	background-color: transparent;
+	size: 32px;
+	cursor: inherit;
+	text-color: inherit;
+}
+
+element-text {
+	background-color: transparent;
+	text-color: inherit;
+	highlight: inherit;
+	cursor: inherit;
+	vertical-align: 0.5;
+}

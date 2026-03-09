@@ -1,0 +1,76 @@
+@import url("./colors.css");
+
+* {
+    font-family: NotoSansMono Nerd Font, "Noto Sans", "JetBrainsMono Nerd Font", "Font Awesome", "Font Awesome 6 Free", "Font Awesome 5 Free", "Symbols Nerd Font";
+    padding: 0;
+    margin: 0;
+}
+
+window#waybar {
+    background-color: @background;
+}
+
+tooltip, #tray menu {
+    background-color: @background;
+    border: 1px solid #43314a;
+}
+
+#tray menu {
+    padding: .6rem .4rem;
+}
+
+.module, #privacy {
+    margin: .4rem .2rem;
+    background-color: @surface;
+    border-radius: .5rem;
+    border: 1px #292130 solid;
+}
+
+label {
+    color: @primary;
+    font-size: .8em;
+}
+
+#workspaces button {
+    padding: 0 .35rem;
+    border-radius: .3rem;
+}
+
+#workspaces button.urgent {
+    background-color: #654868;
+}
+
+#workspaces button.active {
+    background-color: @primary;
+}
+
+#workspaces button.active label {
+    color: @background;
+}
+
+#custom-super {
+    font-size: 1.2em;
+    padding: 0 .8rem;
+}
+
+#custom-super:hover {
+    background-color: @primary;
+    color: @background;
+}
+
+#privacy, #tray, #network, #language, #bluetooth, #pulseaudio, #backlight, #battery, #clock, #cpu, #memory, #temperature, #custom-notifications {
+    padding: 0 .6rem;
+}
+
+#network:hover, #language:hover, #bluetooth:hover, #pulseaudio:hover, #backlight:hover, #clock:hover, #custom-notifications:hover {
+    background-color: @surface-hover;
+}
+
+#network, #battery, #pulseaudio, #backlight {
+    padding-right: 1rem;
+}
+
+#pulseaudio.bluetooth {
+    font-size: 1em;
+    padding-right: .6rem;
+}

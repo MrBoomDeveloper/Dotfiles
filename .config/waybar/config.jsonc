@@ -1,0 +1,225 @@
+{
+	"layer": "top",
+	"position": "top",
+	"height": 24,
+	"reload_style_on_change": true,
+	
+	"modules-left": [
+	    "custom/super",
+	    "hyprland/workspaces"
+	],
+
+	"modules-center": [
+        "mpris"
+	],
+
+	"modules-right": [
+	    "privacy",
+		"tray",
+		"hyprland/language",
+
+		"cpu",
+		"memory",
+		"temperature",
+		"battery",
+
+		"backlight",
+		"pulseaudio",
+		"network",
+
+		"clock",
+
+		"custom/notifications"
+	],
+
+	"mpris": {
+	"format": "DEFAULT: {player_icon} {dynamic}",
+	"format-paused": "DEFAULT: {status_icon} <i>{dynamic}</i>",
+	"on-scroll-down": "playerctl next",
+	"on-scroll-up": "playerctl previous",
+	"player-icons": {
+		"default": "▶",
+		"mpv": "🎵"
+	},
+	"status-icons": {
+		"paused": "⏸"
+	},
+	// "ignored-players": ["firefox"]
+},
+
+	"temperature": {
+		"format": "{temperatureC}°C  ",
+		"on-click": "flatpak run net.nokyan.Resources"
+	},
+
+	"cpu": {
+		"format": "{usage}%  ",
+		"on-click": "flatpak run net.nokyan.Resources"
+	},
+
+	"memory": {
+		"format": "{percentage}%  ",
+		"tooltip-format": "Usage - {used}/{total}\nSwap - {swapUsed}/{swapTotal}",
+		"on-click": "flatpak run net.nokyan.Resources"
+	},
+
+	"backlight": {
+		"smooth-scrolling-threshold": 2,
+		"format": "{icon}",
+		"scroll-step": 10,
+		"format-icons": ["󰃞", "󰃟", "󰃟", "󰃠", "󰃠"],
+		"tooltip": false
+	},
+
+	"privacy": {
+		"icon-spacing": 4,
+		"icon-size": 12,
+		"transition-duration": 250,
+		"ignore-monitor": true,
+
+		"modules": [
+			{
+				"type": "screenshare",
+				"tooltip": true,
+				"tooltip-icon-size": 24
+			},
+
+			{
+				"type": "audio-in",
+				"tooltip": true,
+				"tooltip-icon-size": 24
+			}
+		],
+		
+		"ignore": [
+			{
+				"type": "audio-in",
+				"name": "cava"
+			}
+		]
+	},
+
+	"hyprland/language": {
+		"format": "{}  󰗊",
+		"format-en": "English",
+		"format-ru": "Russian",
+		"keyboard-name": "gsr-ui-virtual-keyboard",
+		"on-click": "hyprctl switchxkblayout current next",
+		"on-scroll-up": "hyprctl switchxkblayout current next",
+		"on-scroll-down": "hyprctl switchxkblayout current next"
+	},
+	
+	"hyprland/workspaces": {
+        "all-outputs": true,
+        "show-special": true,
+		"move-to-monitor": true,
+		"format": "{icon}",
+		"cursor": true
+	},
+
+	"mpris": {
+		"interval": 1,
+		"format": "{player_icon}  {dynamic}",
+		"format-paused": "{status_icon} <i>{dynamic}</i>",
+		"dynamic-order": ["artist", "title", "position", "length"],
+
+		"player-icons": {
+			"default": "▶"
+		},
+
+		"status-icons": {
+			"paused": "⏸"
+		}
+	},
+
+	"tray": {
+		"icon-size": 12,
+		"spacing": 12,
+		"show-passive-items": true
+	},
+
+	"clock": {
+		"interval": 60,
+		"timezone": "Etc/GMT-5",
+		"format": "{:%A, %B %e  •  %R}",
+		"tooltip-format": "<tt><small>{calendar}</small></tt>",
+
+		"calendar": {
+			"mode": "month",
+			"weeks-pos": "right",
+			"on-scroll": 0,			
+
+			"format": {
+				"months": "<span color='#cba6f7'><b>{}</b></span>",
+				"days": "<span color='#cdd6f4'><b>{}</b></span>",
+				"weeks": "<span color='#94e2d5'>W{}</span>",
+				"weekdays": "<span color='#f9e2af'><b>{}</b></span>",
+				"today": "<span color='#f5e0dc'><b><u>{}</u></b></span>"
+			}
+		}
+	},
+
+	"network": {
+		"interval": 60,
+		"interface-ethernet": "enp1s*",
+		"interface-wifi": "wlan0",
+		"format-ethernet": "",
+		"format-wifi": "{icon}",
+		"tooltip-format-ethernet": "{essid} - {ipaddr}",
+		"tooltip-format-wifi": "Ssid - {essid}\nIp - {ipaddr}\nStrength - {signalStrength}%\nInterface - {ifname}",
+		"format-linked": "(No IP) ",
+		"format-disconnected": "󰤮",
+
+		"format-icons": [
+			"󰤯", "󰤟", "󰤢", "󰤥", "󰤨"
+		],
+
+		"on-click": "kitty nmtui"
+	},
+	
+	"battery": {
+		"format": "{capacity}%  {icon}",
+		"format-icons": ["", "", "", "", ""],
+		"tooltip": false
+	},
+
+	"pulseaudio": {
+		"smooth-scrolling-threshold": 2,
+		"format": "",
+		"format-bluetooth": "󰂯",
+		"format-muted": "",
+		"tooltip-format": "{volume}%",
+		
+		"on-click": "kitty pulsemixer",
+		"on-click-right": "rofi-bluetooth -theme $HOME/.config/rofi/emoji-style.rasi"
+	},
+
+	"custom/notifications": {
+		"tooltip": true,
+		"format": "<span size='11pt'>{icon}</span>",
+	
+		"format-icons": {
+			"notification": "󱅫",
+			"none": "󰂜",
+			"dnd-notification": "󰂠",
+			"dnd-none": "󰪓",
+			"inhibited-notification": "󰂛",
+			"inhibited-none": "󰪑",
+			"dnd-inhibited-notification": "󰂛",
+			"dnd-inhibited-none": "󰪑"
+		},
+
+		"return-type": "json",
+		"exec-if": "which swaync-client",
+		"exec": "swaync-client -swb",
+		"on-click": "swaync-client -t -sw",
+		"on-click-right": "swaync-client -d -sw",
+		"escape": true
+	},
+
+	"custom/super": {
+		"format": "󰣇",
+		"tooltip": false,
+		"on-click": "~/.config/rofi/quickactions.sh"
+	}
+}
