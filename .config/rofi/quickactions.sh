@@ -12,8 +12,7 @@ manageBluetooth="Manage Bluetooth"
 power="Power Options"
 
 launchRofi() {
-    echo -e "$emojiPicker\0icon\x1f<span>🫠</span> \
-$iconPicker\0icon\x1f<span>✨</span>" | \
+    echo -e "$emojiPicker\n$iconPicker" | \
     rofi -dmenu -format s -theme launcher-style.rasi
 }
 
@@ -36,11 +35,11 @@ case $(launchRofi) in
 
 	$iconPicker)
 		rofimoji \
-                        --action copy \
-                        --hidden-descriptions \
-                        --use-icons \
-			-f fontawesome6 \
-                        --selector-args "-theme $HOME/.config/rofi/emoji-style.rasi"
+            --action copy \
+            --hidden-descriptions \
+            --use-icons \
+			--files all \
+            --selector-args "-theme $HOME/.config/rofi/emoji-style.rasi"
 	;;
 
 	$colorPicker)

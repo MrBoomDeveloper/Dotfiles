@@ -22,7 +22,7 @@ tooltip, #tray menu {
 .module, #privacy {
     margin: .4rem .2rem;
     background-color: @surface;
-    border-radius: .5rem;
+    border-radius: 0rem;
     border: 1px #292130 solid;
 }
 
@@ -33,7 +33,7 @@ label {
 
 #workspaces button {
     padding: 0 .35rem;
-    border-radius: .3rem;
+    border-radius: 0rem;
 }
 
 #workspaces button.urgent {
@@ -62,7 +62,7 @@ label {
     padding: 0 .6rem;
 }
 
-#network:hover, #language:hover, #bluetooth:hover, #pulseaudio:hover, #backlight:hover, #clock:hover, #custom-notifications:hover {
+#network:hover, #bluetooth:hover, #language:hover, #bluetooth:hover, #pulseaudio:hover, #backlight:hover, #clock:hover, #custom-notifications:hover {
     background-color: @surface-hover;
 }
 
@@ -70,7 +70,6 @@ label {
     padding-right: 1rem;
 }
 
-#pulseaudio.bluetooth {
+#bluetooth {
     font-size: 1em;
-    padding-right: .6rem;
 }

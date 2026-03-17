@@ -25,11 +25,11 @@
     "script-fail-notify": true,
 
     "widgets": [
-        "mpris",
-        "volume",
         "title",
         "dnd",
-        "notifications"
+        "notifications",
+        "mpris",
+        "volume"
     ],
    
     "widget-config": {

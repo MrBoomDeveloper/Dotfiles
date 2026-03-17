@@ -25,6 +25,8 @@
 
 		"backlight",
 		"pulseaudio",
+
+		"bluetooth",
 		"network",
 
 		"clock",
@@ -33,19 +35,21 @@
 	],
 
 	"mpris": {
-	"format": "DEFAULT: {player_icon} {dynamic}",
-	"format-paused": "DEFAULT: {status_icon} <i>{dynamic}</i>",
-	"on-scroll-down": "playerctl next",
-	"on-scroll-up": "playerctl previous",
-	"player-icons": {
-		"default": "▶",
-		"mpv": "🎵"
-	},
-	"status-icons": {
-		"paused": "⏸"
-	},
-	// "ignored-players": ["firefox"]
-},
+	    "format": "DEFAULT: {player_icon} {dynamic}",
+	    "format-paused": "DEFAULT: {status_icon} <i>{dynamic}</i>",
+	    "on-scroll-down": "playerctl next",
+	    "on-scroll-up": "playerctl previous",
+	    
+	    "player-icons": {
+		    "default": "▶",
+		    "mpv": "🎵"
+	    },
+	    
+	    "status-icons": {
+		    "paused": "⏸"
+	    },
+	    // "ignored-players": ["firefox"]
+    },
 
 	"temperature": {
 		"format": "{temperatureC}°C  ",
@@ -186,12 +190,20 @@
 	"pulseaudio": {
 		"smooth-scrolling-threshold": 2,
 		"format": "",
-		"format-bluetooth": "󰂯",
 		"format-muted": "",
 		"tooltip-format": "{volume}%",
-		
-		"on-click": "kitty pulsemixer",
-		"on-click-right": "rofi-bluetooth -theme $HOME/.config/rofi/emoji-style.rasi"
+		"on-click": "kitty pulsemixer"
+	},
+
+	"bluetooth": {
+	    "format": "󰂯",
+	    "format-off": "󰂲",
+	    "format-disabled": "󰂲",
+	    "tooltip-format": "{controller_alias}\t{controller_address}\n\n{num_connections} connected",
+        "tooltip-format-connected": "{device_enumerate}",
+        "tooltip-format-enumerate-connected": "{device_alias}\t{device_address}",
+        "tooltip-format-enumerate-connected-battery": "{device_alias}\t{device_address}\t{device_battery_percentage}% 󰥉",
+        "on-click": "rofi-bluetooth -theme $HOME/.config/rofi/emoji-style.rasi"
 	},
 
 	"custom/notifications": {
