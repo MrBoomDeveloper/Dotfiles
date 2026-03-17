@@ -6,7 +6,8 @@
 	
 	"modules-left": [
 	    "custom/super",
-	    "hyprland/workspaces"
+	    "hyprland/workspaces",
+	    "tray"
 	],
 
 	"modules-center": [
@@ -15,7 +16,6 @@
 
 	"modules-right": [
 	    "privacy",
-		"tray",
 		"hyprland/language",
 
 		"cpu",
@@ -118,7 +118,13 @@
         "show-special": true,
 		"move-to-monitor": true,
 		"format": "{icon}",
-		"cursor": true
+		"cursor": true,
+
+		"format-icons": {
+            "VPN": "",
+            "Telegram": "",
+            "Music": ""
+		}
 	},
 
 	"mpris": {
@@ -138,7 +144,7 @@
 
 	"tray": {
 		"icon-size": 12,
-		"spacing": 12,
+		"spacing": 16,
 		"show-passive-items": true
 	},
 
@@ -192,7 +198,7 @@
 		"format": "",
 		"format-muted": "",
 		"tooltip-format": "{volume}%",
-		"on-click": "kitty pulsemixer"
+		"on-click": "pavucontrol"
 	},
 
 	"bluetooth": {

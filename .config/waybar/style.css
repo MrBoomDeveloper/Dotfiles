@@ -62,7 +62,7 @@ label {
     padding: 0 .6rem;
 }
 
-#network:hover, #bluetooth:hover, #language:hover, #bluetooth:hover, #pulseaudio:hover, #backlight:hover, #clock:hover, #custom-notifications:hover {
+#network:hover, #bluetooth:hover, #cpu:hover, #memory:hover, #temperature:hover, #mpris:hover, #language:hover, #bluetooth:hover, #pulseaudio:hover, #backlight:hover, #clock:hover, #custom-notifications:hover {
     background-color: @surface-hover;
 }
 
@@ -72,4 +72,8 @@ label {
 
 #bluetooth {
     font-size: 1em;
+}
+
+#mpris {
+    padding: 0 16px;
 }
