@@ -33,10 +33,10 @@ window {
 	fullscreen: false;
 	width: 500px;
     border: 1px solid;
-	border-radius: 0px;
-	border-color: @primary;
+	border-radius: 8px;
+	border-color: rgba(255, 186, 250, 0.2);
 	cursor: "default";
-	background-color: #160617dd;
+	background-color: rgba(0, 0, 0, 0.75);
 }
 
 mainbox {
@@ -48,7 +48,7 @@ inputbar {
 	spacing: 24px;
 	padding: 12px 24px;
 	border: 0px 0px 1px 0px;
-	border-color: @primary;
+	border-color: rgba(255, 186, 250, 0.5);
 	background-color: transparent;
 	text-color: @primary;
 	children: [ "prompt", "entry" ];

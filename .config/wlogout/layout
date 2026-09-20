@@ -1,6 +1,6 @@
 {
     "label" : "lock",
-    "action" : "hyprlock",
+    "action" : "/home/mrboomdev/.local/share/quickshell-lockscreen/lock.sh",
     "text" : "Lock",
     "keybind" : "l"
 }
@@ -12,7 +12,7 @@
 }
 {
     "label" : "logout",
-    "action" : "loginctl terminate-user $USER",
+    "action" : "hyprshutdown",
     "text" : "Logout",
     "keybind" : "e"
 }
