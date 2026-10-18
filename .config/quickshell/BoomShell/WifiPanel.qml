@@ -166,14 +166,6 @@ PanelWindow {
             RowLayout {
                 Layout.fillWidth: true
 
-                Text {
-                    text: "Wi-Fi"
-                    color: "white"
-                    font.pixelSize: 16
-                    font.bold: true
-                    Layout.fillWidth: true
-                }
-
                 // Close panel
                 Rectangle {
                     implicitWidth: 26
@@ -198,13 +190,22 @@ PanelWindow {
                         onClicked: root.dismissed()
                     }
                 }
-            }
 
-            Toggle {
-                id: wifiToggle
-                label: "Wi-Fi"
-                checked: Networking.wifiEnabled
-                onToggled: value => Networking.wifiEnabled = value
+                Text {
+                    text: "Wi-Fi"
+                    color: "white"
+                    font.pixelSize: 16
+                    font.bold: true
+                }
+
+                Toggle {
+                    id: wifiToggle
+                    label: ""
+                    color: Qt.rgba(0, 0, 0, 0)
+                    border.width: 0
+                    checked: Networking.wifiEnabled
+                    onToggled: value => Networking.wifiEnabled = value
+                }
             }
 
             Toggle {

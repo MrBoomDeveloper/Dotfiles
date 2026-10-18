@@ -83,14 +83,6 @@ PanelWindow {
             RowLayout {
                 Layout.fillWidth: true
 
-                Text {
-                    text: "Bluetooth"
-                    color: "white"
-                    font.pixelSize: 16
-                    font.bold: true
-                    Layout.fillWidth: true
-                }
-
                 // Close panel
                 Rectangle {
                     implicitWidth: 26
@@ -115,15 +107,25 @@ PanelWindow {
                         onClicked: root.dismissed()
                     }
                 }
-            }
 
-            Toggle {
-                id: btToggle
-                label: "Bluetooth"
-                checked: root.adapter ? root.adapter.enabled : false
-                onToggled: value => {
-                    if (root.adapter)
-                        root.adapter.enabled = value
+                Text {
+                    text: "Bluetooth"
+                    color: "white"
+                    font.pixelSize: 16
+                    font.bold: true
+                    // Layout.fillWidth: true
+                }
+
+                Toggle {
+                    id: btToggle
+                    label: ""
+                    color: Qt.rgba(0, 0, 0, 0)
+                    border.width: 0
+                    checked: root.adapter ? root.adapter.enabled : false
+                    onToggled: value => {
+                        if (root.adapter)
+                            root.adapter.enabled = value
+                    }
                 }
             }
 

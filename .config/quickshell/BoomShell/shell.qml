@@ -467,6 +467,8 @@ Scope {
         notifServer: notifServer
         onDismissed: root.closeAllPanels()
         onOsd: (icon, text) => osd.show(icon, text)
+        onWifiRequested: root.toggleWifi()
+        onBluetoothRequested: root.toggleBluetooth()
     }
 
     WifiPanel {
