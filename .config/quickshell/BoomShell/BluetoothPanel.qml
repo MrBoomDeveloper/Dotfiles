@@ -9,13 +9,55 @@ PanelWindow {
 
     // External control
     property bool open: false
+    property bool closing: false
 
     signal dismissed()
 
     // Device whose action row is expanded (BluetoothDevice or null)
     property var activeDevice: null
 
-    visible: open
+    onOpenChanged: {
+        if (root.open) {
+            dismissTimer.stop()
+            root.visible = true
+            root.closing = false
+            closeSlideTimer.stop()
+            panel.slideX = -360
+            slideInTimer.restart()
+        } else if (!root.closing && root.visible) {
+            root.activeDevice = null
+            slideInTimer.stop()
+            root.closing = true
+            closeSlideTimer.restart()
+            dismissTimer.restart()
+        }
+    }
+
+    Timer {
+        id: slideInTimer
+        interval: 0
+        onTriggered: panel.slideX = 0
+    }
+
+    Timer {
+        id: closeSlideTimer
+        interval: 0
+        onTriggered: panel.slideX = -360
+    }
+
+    Timer {
+        id: dismissTimer
+        interval: 260
+        onTriggered: {
+            root.visible = false
+            root.closing = false
+            root.dismissed()
+        }
+    }
+
+    Component.onCompleted: panel.slideX = -360
+
+    visible: false
     color: "transparent"
     focusable: false
 
@@ -68,6 +110,16 @@ PanelWindow {
         color: Qt.rgba(0, 0, 0, 0.9)
         border.color: Qt.rgba(1, 1, 1, 0.08)
         border.width: 2
+
+        property real slideX: -360
+        transform: Translate { x: panel.slideX }
+
+        Behavior on slideX {
+            NumberAnimation {
+                duration: root.closing ? 200 : 240
+                easing.type: root.closing ? Easing.InCubic : Easing.OutCubic
+            }
+        }
 
         // Absorb clicks so they don't close the panel
         MouseArea {

@@ -465,7 +465,10 @@ Scope {
     Start {
         open: root.startMenuOpen
         notifServer: notifServer
-        onDismissed: root.closeAllPanels()
+        onDismissed: {
+            if (root.startMenuOpen)
+                root.closeAllPanels()
+        }
         onOsd: (icon, text) => osd.show(icon, text)
         onWifiRequested: root.toggleWifi()
         onBluetoothRequested: root.toggleBluetooth()
@@ -473,25 +476,37 @@ Scope {
 
     WifiPanel {
         open: root.wifiOpen
-        onDismissed: root.closeAllPanels()
+        onDismissed: {
+            if (root.wifiOpen)
+                root.closeAllPanels()
+        }
     }
 
     BluetoothPanel {
         open: root.bluetoothOpen
-        onDismissed: root.closeAllPanels()
+        onDismissed: {
+            if (root.bluetoothOpen)
+                root.closeAllPanels()
+        }
     }
 
     CalendarPanel {
         id: calendar
         open: root.calendarOpen
         anchorItem: clockBtn
-        onDismissed: root.closeAllPanels()
+        onDismissed: {
+            if (root.calendarOpen)
+                root.closeAllPanels()
+        }
     }
 
     TrayMenu {
         item: root.trayMenuOpen ? root.activeTrayItem : null
         anchorItem: tray
         anchorY: root.activeTrayY
-        onDismissed: root.closeAllPanels()
+        onDismissed: {
+            if (root.trayMenuOpen)
+                root.closeAllPanels()
+        }
     }
 }

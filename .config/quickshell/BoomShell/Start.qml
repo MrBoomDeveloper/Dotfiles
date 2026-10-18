@@ -14,7 +14,48 @@ PanelWindow {
     // External control
     property bool open: false
     property bool doNotDisturb: false
+    property bool closing: false
     required property var notifServer
+
+    onOpenChanged: {
+        if (root.open) {
+            dismissTimer.stop()
+            root.visible = true
+            root.closing = false
+            closeSlideTimer.stop()
+            menuPanel.slideX = -360
+            slideInTimer.restart()
+        } else if (!root.closing && root.visible) {
+            slideInTimer.stop()
+            root.closing = true
+            closeSlideTimer.restart()
+            dismissTimer.restart()
+        }
+    }
+
+    Timer {
+        id: slideInTimer
+        interval: 0
+        onTriggered: menuPanel.slideX = 0
+    }
+
+    Timer {
+        id: closeSlideTimer
+        interval: 0
+        onTriggered: menuPanel.slideX = -360
+    }
+
+    Timer {
+        id: dismissTimer
+        interval: 260
+        onTriggered: {
+            root.visible = false
+            root.closing = false
+            root.dismissed()
+        }
+    }
+
+    Component.onCompleted: menuPanel.slideX = -360
 
     function resolveIcon(icon) {
         if (!icon)
@@ -143,7 +184,7 @@ PanelWindow {
             root.osd(root.muted ? String.fromCodePoint(0xF026) : String.fromCodePoint(0xF028), root.muted ? "Muted" : "Unmuted");
     }
 
-    visible: open
+    visible: false
     color: "transparent"
     focusable: false
 
@@ -185,6 +226,16 @@ PanelWindow {
         color: '#e6000000'
         border.color: Qt.rgba(1, 1, 1, 0.08)
         border.width: 2
+
+        property real slideX: -360
+        transform: Translate { x: menuPanel.slideX }
+
+        Behavior on slideX {
+            NumberAnimation {
+                duration: root.closing ? 200 : 240
+                easing.type: root.closing ? Easing.InCubic : Easing.OutCubic
+            }
+        }
 
         // Absorb clicks so they don't close the menu
         MouseArea {

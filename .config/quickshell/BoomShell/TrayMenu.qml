@@ -45,6 +45,7 @@ PopupWindow {
             slideInTimer.stop()
             root.closing = true
             closeSlideTimer.restart()
+            dismissTimer.restart()
         }
     }
 
@@ -77,6 +78,7 @@ PopupWindow {
             slideInTimer.stop()
             root.closing = true
             closeSlideTimer.restart()
+            dismissTimer.restart()
         }
     }
 
@@ -125,6 +127,7 @@ PopupWindow {
                         onClicked: {
                             root.closing = true
                             closeSlideTimer.restart()
+                            dismissTimer.restart()
                         }
                     }
                 }
@@ -206,6 +209,7 @@ PopupWindow {
                                 entry.triggered()
                                 root.closing = true
                                 closeSlideTimer.restart()
+                                dismissTimer.restart()
                             }
                         }
                     }
