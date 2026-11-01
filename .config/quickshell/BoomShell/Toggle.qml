@@ -1,56 +1,49 @@
 import QtQuick
 import QtQuick.Layouts
+import "Theme.js" as T
 
+// M3 settings row with trailing switch. Compact mode is a bare switch.
 Rectangle {
     id: toggle
     property string label: ""
     property bool checked: false
+    property bool compact: false
     signal toggled(bool value)
 
-    Layout.fillWidth: true
-    implicitHeight: 42
-    radius: 8
-    color: Qt.rgba(1, 0.65, 0.89, 0.03)
-    border.color: Qt.rgba(1, 1, 1, 0.05)
-    border.width: 1
+    Layout.fillWidth: !toggle.compact
+    implicitWidth: toggle.compact ? 52 : 0
+    implicitHeight: toggle.compact ? 32 : T.rowHeight
+    radius: T.radiusCard
+    color: !toggle.compact && rowMouse.containsMouse ? T.surfaceContainer : "transparent"
 
     RowLayout {
         anchors.fill: parent
-        anchors.leftMargin: 12
-        anchors.rightMargin: 12
-        spacing: 10
+        anchors.leftMargin: toggle.compact ? 0 : T.margin
+        anchors.rightMargin: toggle.compact ? 0 : T.margin
+        spacing: T.gapLarge
 
         Text {
-            text: toggle.label
-            color: '#f4cdf1'
-            font.pixelSize: 13
+            visible: !toggle.compact
             Layout.fillWidth: true
+            text: toggle.label
+            color: T.onSurface
+            font.pixelSize: T.bodyLarge
+            font.family: T.font
+            elide: Text.ElideRight
         }
 
-        Rectangle {
-            width: 42
-            height: 22
-            radius: 11
-            color: toggle.checked ? '#ffa9e5' : '#382432'
-
-            Rectangle {
-                width: 16
-                height: 16
-                radius: 8
-                anchors.verticalCenter: parent.verticalCenter
-                x: toggle.checked ? parent.width - width - 3 : 3
-                color: toggle.checked ? "black" : "white"
-
-                Behavior on x {
-                    NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
-                }
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: toggle.toggled(!toggle.checked)
-            }
+        M3Switch {
+            checked: toggle.checked
+            onToggled: value => toggle.toggled(value)
         }
+    }
+
+    MouseArea {
+        id: rowMouse
+        anchors.fill: parent
+        visible: !toggle.compact
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
+        onClicked: toggle.toggled(!toggle.checked)
     }
 }

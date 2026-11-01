@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import QtQuick.Controls
 import Quickshell
 import Quickshell.Networking
+import "Theme.js" as T
 
 PanelWindow {
     id: root
@@ -87,7 +88,6 @@ PanelWindow {
         return null
     }
 
-    // Sorted list of networks: connected first, then by signal strength
     readonly property var networks: {
         if (!root.wifiDevice)
             return []
@@ -168,25 +168,30 @@ PanelWindow {
         root.password = ""
     }
 
+    // Maximum height for the network list before it starts scrolling
+    readonly property real maxListHeight: Math.max(200, root.height * 0.55)
+
     // Click outside → close
     MouseArea {
         anchors.fill: parent
         onClicked: root.dismissed()
     }
 
-    // Panel background
+    // Panel background — M3 bottom sheet, content stacks upward from the bottom
     Rectangle {
         id: panel
-        width: 360
+        width: 340
         anchors {
-            top: parent.top
             bottom: parent.bottom
             left: parent.left
         }
-        radius: 12
-        color: Qt.rgba(0, 0, 0, 0.9)
-        border.color: Qt.rgba(1, 1, 1, 0.08)
-        border.width: 2
+        height: Math.min(parent.height, contentLayout.implicitHeight + 2 * T.margin)
+        radius: 24
+        bottomLeftRadius: 0
+        bottomRightRadius: 0
+        color: T.surface
+        border.color: T.outline
+        border.width: 1
 
         property real slideX: -360
         transform: Translate { x: panel.slideX }
@@ -205,50 +210,19 @@ PanelWindow {
         }
 
         ColumnLayout {
+            id: contentLayout
             anchors.fill: parent
-            anchors.margins: 14
-            spacing: 5
+            anchors.margins: T.margin
+            spacing: T.gap
 
-            RowLayout {
-                Layout.fillWidth: true
-
-                // Close panel
-                Rectangle {
-                    implicitWidth: 26
-                    implicitHeight: 26
-                    radius: 8
-                    color: closeMouse.containsMouse ? Qt.rgba(1, 0.65, 0.89, 0.175) : Qt.rgba(1, 0.65, 0.89, 0.03)
-                    border.color: Qt.rgba(1, 1, 1, 0.05)
-                    border.width: 1
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "✕"
-                        color: "#cdd6f4"
-                        font.pixelSize: 13
-                    }
-
-                    MouseArea {
-                        id: closeMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.dismissed()
-                    }
-                }
-
-                Text {
-                    text: "Wi-Fi"
-                    color: "white"
-                    font.pixelSize: 16
-                    font.bold: true
-                }
+            AppBar {
+                title: "Wi-Fi"
+                showClose: true
+                onCloseClicked: root.dismissed()
 
                 Toggle {
                     id: wifiToggle
-                    label: ""
-                    color: Qt.rgba(0, 0, 0, 0)
-                    border.width: 0
+                    compact: true
                     checked: Networking.wifiEnabled
                     onToggled: value => Networking.wifiEnabled = value
                 }
@@ -266,19 +240,21 @@ PanelWindow {
 
             Text {
                 Layout.fillWidth: true
+                Layout.leftMargin: T.margin
                 visible: root.connectedNetwork !== null
                 text: root.connectedNetwork ? "Connected to " + root.connectedNetwork.name : ""
-                color: '#e7bbd7'
-                font.pixelSize: 12
+                color: T.onSurfaceVariant
+                font.pixelSize: T.labelMedium
+                font.family: T.font
                 elide: Text.ElideRight
             }
 
             ListView {
                 id: netList
                 Layout.fillWidth: true
-                Layout.fillHeight: true
+                Layout.preferredHeight: Math.min(Math.max(netList.contentHeight, 80), root.maxListHeight)
                 clip: true
-                spacing: 8
+                spacing: T.gapSmall
                 model: root.networks
 
                 delegate: Rectangle {
@@ -296,219 +272,176 @@ PanelWindow {
                     }
 
                     width: netList.width
-                    height: content.implicitHeight + 12
-                    radius: 8
-                    color: net.connected ? Qt.rgba(1, 0.58, 0.89) : Qt.rgba(1, 1, 1, 0.05)
+                    height: contentCol.implicitHeight + 2 * T.margin
+                    radius: T.radiusCard
+                    color: net.connected ? T.secondaryContainer
+                                        : (delegateMouse.containsMouse ? T.surfaceContainer : "transparent")
+
+                    MouseArea {
+                        id: delegateMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: (!net.connected && root.activeNetwork !== net) ? Qt.PointingHandCursor : Qt.ArrowCursor
+                        onClicked: {
+                            if (!net.connected && root.activeNetwork !== net)
+                                root.handleAction(net)
+                        }
+                    }
 
                     ColumnLayout {
-                        id: content
+                        id: contentCol
                         anchors.fill: parent
-                        anchors.margins: 8
-                        spacing: 6
+                        anchors.margins: T.margin
+                        spacing: T.gapLarge
 
                         RowLayout {
                             Layout.fillWidth: true
-                            spacing: 4
+                            spacing: T.gap
 
-                            // Signal strength bars
-                            Row {
-                                spacing: 2
+                            // Signal strength
+                            Item {
                                 Layout.alignment: Qt.AlignVCenter
+                                implicitWidth: 18
+                                implicitHeight: 18
 
-                                Repeater {
-                                    model: 4
-                                    delegate: Rectangle {
-                                        width: 3
-                                        height: 4 + index * 3
-                                        radius: 1
-                                        anchors.bottom: parent.bottom
-                                        color: index < netDelegate.sigLevel ? "#a6e3a1" : "#45475a"
+                                Row {
+                                    anchors.centerIn: parent
+                                    spacing: 2
+
+                                    Repeater {
+                                        model: 4
+                                        delegate: Item {
+                                            width: 3
+                                            height: 18
+
+                                            Rectangle {
+                                                anchors.bottom: parent.bottom
+                                                width: parent.width
+                                                height: 5 + index * 3
+                                                radius: 1.5
+                                                color: index < netDelegate.sigLevel ? T.primary
+                                                     : Qt.rgba(1, 1, 1, 0.24)
+                                            }
+                                        }
                                     }
                                 }
                             }
 
                             ColumnLayout {
                                 Layout.fillWidth: true
-                                spacing: 0
+                                spacing: 2
 
                                 Text {
                                     Layout.fillWidth: true
                                     text: net.name || "Unknown"
-                                    color: net.connected ? "black" : "white"
-                                    font.pixelSize: 13
-                                    font.bold: net.connected
+                                    color: net.connected ? T.onSecondaryContainer : T.onSurface
+                                    font.pixelSize: T.titleMedium
+                                    font.weight: Font.Medium
+                                    font.family: T.font
                                     elide: Text.ElideRight
                                 }
 
                                 Text {
                                     Layout.fillWidth: true
                                     text: netDelegate.subtitle
-                                    color: net.connected ? "black" : '#c8a6c0'
-                                    font.pixelSize: 11
+                                    color: T.onSurfaceVariant
+                                    font.pixelSize: T.bodyMedium
+                                    font.family: T.font
                                     elide: Text.ElideRight
                                 }
                             }
 
-                            // Forget (saved networks only)
-                            Rectangle {
-                                visible: net.known
-                                implicitWidth: forgetText.implicitWidth + 14
-                                implicitHeight: 26
-                                radius: 6
-                                color: forgetMouse.containsMouse ? Qt.rgba(0, 0, 0, 0.5) : Qt.rgba(0, 0, 0, 0.65)
-
-                                Text {
-                                    id: forgetText
-                                    anchors.centerIn: parent
-                                    text: "Forget"
-                                    color: "#cdd6f4"
-                                    font.pixelSize: 11
-                                }
-
-                                MouseArea {
-                                    id: forgetMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: net.forget()
-                                }
+                            M3Button {
+                                Layout.alignment: Qt.AlignVCenter
+                                visible: net.known && !net.connected
+                                compact: true
+                                variant: "text"
+                                text: "Forget"
+                                onClicked: net.forget()
                             }
 
-                            // Connect / disconnect
-                            Rectangle {
-                                implicitWidth: actionText.implicitWidth + 16
-                                implicitHeight: 26
-                                radius: 6
-                                color: net.connected
-                                       ? Qt.rgba(0.82, 0.2, 0.3)
-                                       : (actionMouse.containsMouse ? Qt.rgba(0.55, 0.65, 1.0, 0.28) : Qt.rgba(0.55, 0.65, 1.0, 0.16))
-
-                                Text {
-                                    id: actionText
-                                    anchors.centerIn: parent
-                                    text: net.connected ? "Disconnect" : (isConnecting ? "…" : "Connect")
-                                    color: net.connected ? '#fff2f5' : '#fa8994'
-                                    font.pixelSize: 12
-                                }
-
-                                MouseArea {
-                                    id: actionMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: root.handleAction(net)
-                                }
+                            M3Button {
+                                Layout.alignment: Qt.AlignVCenter
+                                compact: true
+                                variant: net.connected ? "error" : "tonal"
+                                text: net.connected ? "Disconnect" : (netDelegate.isConnecting ? "…" : "Connect")
+                                onClicked: root.handleAction(net)
                             }
                         }
 
-                        // Password entry
+                        // Password entry — M3 filled text field
                         ColumnLayout {
                             Layout.fillWidth: true
                             visible: root.activeNetwork === net
-                            spacing: 6
+                            spacing: T.gap
 
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
+                                spacing: T.gap
 
                                 TextField {
                                     id: pskField
                                     Layout.fillWidth: true
                                     placeholderText: "Password"
                                     echoMode: root.showPassword ? TextInput.Normal : TextInput.Password
-                                    color: "white"
-                                    placeholderTextColor: "#6c7086"
-                                    font.pixelSize: 13
+                                    color: T.onSurface
+                                    placeholderTextColor: T.onSurfaceVariant
+                                    selectionColor: T.secondaryContainerStrong
+                                    selectedTextColor: T.onSurface
+                                    font.pixelSize: T.bodyLarge
+                                    font.family: T.font
+                                    leftPadding: T.margin
+                                    rightPadding: T.margin
+                                    implicitHeight: 44
                                     text: root.password
                                     onTextChanged: root.password = text
                                     onAccepted: root.connectWithPassword(net)
                                     onVisibleChanged: if (visible) forceActiveFocus()
 
                                     background: Rectangle {
-                                        radius: 6
-                                        color: Qt.rgba(1, 1, 1, 0.08)
-                                        border.color: "#89b4fa"
-                                        border.width: 1
-                                    }
-                                }
+                                        radius: 4
+                                        color: T.surfaceContainerHigh
 
-                                // Show / hide password
-                                Rectangle {
-                                    implicitWidth: 34
-                                    implicitHeight: 34
-                                    radius: 6
-                                    color: eyeMouse.containsMouse
-                                           ? Qt.rgba(1, 1, 1, 0.15)
-                                           : Qt.rgba(1, 1, 1, 0.06)
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: root.showPassword
-                                              ? String.fromCodePoint(0xF070) // eye-slash
-                                              : String.fromCodePoint(0xF06E) // eye
-                                        color: "#cdd6f4"
-                                        font.pixelSize: 15
-                                    }
-
-                                    MouseArea {
-                                        id: eyeMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: root.showPassword = !root.showPassword
-                                    }
-                                }
-                            }
-
-                            RowLayout {
-                                Layout.fillWidth: true
-                                spacing: 8
-
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    implicitHeight: 30
-                                    radius: 6
-                                    color: cancelMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(1, 1, 1, 0.06)
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: "Cancel"
-                                        color: "#cdd6f4"
-                                        font.pixelSize: 12
-                                    }
-
-                                    MouseArea {
-                                        id: cancelMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: {
-                                            root.activeNetwork = null
-                                            root.password = ""
+                                        Rectangle {
+                                            anchors {
+                                                left: parent.left
+                                                right: parent.right
+                                                bottom: parent.bottom
+                                            }
+                                            height: pskField.activeFocus ? 2 : 1
+                                            color: pskField.activeFocus ? T.primary : T.outline
                                         }
                                     }
                                 }
 
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    implicitHeight: 30
-                                    radius: 6
-                                    color: connectMouse.containsMouse ? Qt.rgba(0.55, 0.65, 1.0, 0.38) : Qt.rgba(0.55, 0.65, 1.0, 0.2)
+                                M3IconButton {
+                                    Layout.alignment: Qt.AlignVCenter
+                                    glyph: root.showPassword
+                                           ? String.fromCodePoint(0xF070) // eye-slash
+                                           : String.fromCodePoint(0xF06E) // eye
+                                    iconSize: 18
+                                    onClicked: root.showPassword = !root.showPassword
+                                }
+                            }
 
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: "Connect"
-                                        color: "#89b4fa"
-                                        font.pixelSize: 12
-                                    }
+                            RowLayout {
+                                Layout.alignment: Qt.AlignRight
+                                spacing: T.gap
 
-                                    MouseArea {
-                                        id: connectMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: root.connectWithPassword(net)
+                                M3Button {
+                                    variant: "text"
+                                    text: "Cancel"
+                                    onClicked: {
+                                        root.activeNetwork = null
+                                        root.password = ""
                                     }
+                                }
+
+                                M3Button {
+                                    variant: "filled"
+                                    text: "Connect"
+                                    enabled: root.password.length > 0
+                                    onClicked: root.connectWithPassword(net)
                                 }
                             }
                         }
@@ -519,12 +452,11 @@ PanelWindow {
                     anchors.centerIn: parent
                     visible: netList.count === 0
                     text: root.wifiDevice ? "No networks found" : "No Wi-Fi device"
-                    color: "#6c7086"
-                    font.pixelSize: 13
+                    color: T.onSurfaceVariant
+                    font.pixelSize: T.bodyMedium
+                    font.family: T.font
                 }
             }
         }
     }
-
-
 }

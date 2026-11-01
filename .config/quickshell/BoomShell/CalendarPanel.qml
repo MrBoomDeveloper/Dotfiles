@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import "Theme.js" as T
 
 PopupWindow {
     id: root
@@ -16,8 +17,8 @@ PopupWindow {
     visible: false
     color: "transparent"
 
-    implicitWidth: 340
-    implicitHeight: 384
+    implicitWidth: 320
+    implicitHeight: 344
 
     anchor.item: root.anchorItem
     anchor.edges: Edges.Top | Edges.Right
@@ -107,10 +108,10 @@ PopupWindow {
     Rectangle {
         id: panel
         anchors.fill: parent
-        radius: 20
-        color: Qt.rgba(0, 0, 0, 0.92)
-        border.color: Qt.rgba(1, 1, 1, 0.08)
-        border.width: 2
+        radius: T.radiusPanel
+        color: T.surface
+        border.color: T.outline
+        border.width: 1
 
         property real slideX: -340
         transform: Translate { x: panel.slideX }
@@ -124,38 +125,28 @@ PopupWindow {
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 16
-            spacing: 10
+            anchors.margins: T.margin
+            spacing: T.gap
 
-            // Header — month/year + Today chip + chevron navigation
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: 4
-
-                Text {
-                    Layout.fillWidth: true
-                    text: root.monthNames[root.month] + " " + root.year
-                    color: "white"
-                    font.pixelSize: 17
-                    font.bold: true
-                    font.family: "Google Sans Flex"
-                    elide: Text.ElideRight
-                }
+            // Header — Material 3 top app bar
+            AppBar {
+                title: root.monthNames[root.month] + " " + root.year
 
                 Rectangle {
-                    implicitWidth: todayText.implicitWidth + 22
-                    implicitHeight: 28
-                    radius: 14
-                    color: todayMouse.containsMouse ? Qt.rgba(1, 0.65, 0.89, 0.26) : Qt.rgba(1, 0.65, 0.89, 0.12)
+                    implicitWidth: todayText.implicitWidth + 18
+                    implicitHeight: 26
+                    Layout.alignment: Qt.AlignVCenter
+                    radius: 13
+                    color: todayMouse.containsMouse ? T.secondaryContainerStrong : T.secondaryContainer
 
                     Text {
                         id: todayText
                         anchors.centerIn: parent
                         text: "Today"
-                        color: '#ffd0fa'
-                        font.pixelSize: 11
-                        font.bold: true
-                        font.family: "Google Sans Flex"
+                        color: T.onSecondaryContainer
+                        font.pixelSize: T.labelMedium
+                        font.weight: Font.Medium
+                        font.family: T.font
                     }
 
                     MouseArea {
@@ -167,12 +158,14 @@ PopupWindow {
                     }
                 }
 
-                NavButton {
+                M3IconButton {
+                    Layout.alignment: Qt.AlignVCenter
                     glyph: String.fromCodePoint(0xF0141) // chevron-left
                     onClicked: root.prevMonth()
                 }
 
-                NavButton {
+                M3IconButton {
+                    Layout.alignment: Qt.AlignVCenter
                     glyph: String.fromCodePoint(0xF0142) // chevron-right
                     onClicked: root.nextMonth()
                 }
@@ -188,10 +181,10 @@ PopupWindow {
                         width: dayHeader.width / 7
                         horizontalAlignment: Text.AlignHCenter
                         text: modelData
-                        color: '#c8a6c6'
-                        font.pixelSize: 11
-                        font.bold: true
-                        font.family: "Google Sans Flex"
+                        color: T.onSurfaceVariant
+                        font.pixelSize: T.labelMedium
+                        font.weight: Font.Medium
+                        font.family: T.font
                     }
                 }
             }
@@ -204,7 +197,7 @@ PopupWindow {
                 clip: true
                 interactive: false
                 cellWidth: calGrid.width / 7
-                cellHeight: 40
+                cellHeight: 34
                 model: root.cells
 
                 delegate: Item {
@@ -214,19 +207,19 @@ PopupWindow {
 
                     Rectangle {
                         anchors.centerIn: parent
-                        width: 36
-                        height: 36
-                        radius: 18
-                        color: modelData.today ? '#ffc0f7'
-                             : (modelData.inMonth && dayMouse.containsMouse ? Qt.rgba(1, 0.65, 0.89, 0.12) : "transparent")
+                        width: 30
+                        height: 30
+                        radius: 15
+                        color: modelData.today ? T.primaryContainer
+                             : (modelData.inMonth && dayMouse.containsMouse ? T.secondaryContainer : "transparent")
 
                         Text {
                             anchors.centerIn: parent
                             text: modelData.day
-                            color: modelData.today ? "black" : (modelData.inMonth ? '#f4cdf0' : '#6c7086')
+                            color: modelData.today ? T.onPrimaryContainer : (modelData.inMonth ? T.onSurface : T.disabled)
                             font.pixelSize: 12
-                            font.bold: modelData.today
-                            font.family: "Google Sans Flex"
+                            font.weight: modelData.today ? Font.Medium : Font.Normal
+                            font.family: T.font
                         }
                     }
 
@@ -237,32 +230,6 @@ PopupWindow {
                     }
                 }
             }
-        }
-    }
-
-    component NavButton: Rectangle {
-        id: navBtn
-        property string glyph: ""
-        signal clicked()
-        width: 32
-        height: 32
-        radius: 16
-        color: navMouse.containsMouse ? Qt.rgba(1, 0.65, 0.89, 0.175) : "transparent"
-
-        Text {
-            anchors.centerIn: parent
-            text: navBtn.glyph
-            color: '#ffd0fa'
-            font.pixelSize: 14
-            font.family: "Google Sans Flex"
-        }
-
-        MouseArea {
-            id: navMouse
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: navBtn.clicked()
         }
     }
 }

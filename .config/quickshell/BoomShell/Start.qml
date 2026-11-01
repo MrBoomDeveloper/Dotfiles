@@ -7,6 +7,7 @@ import Quickshell.Networking
 import Quickshell.Bluetooth
 import Quickshell.Services.Notifications
 import Quickshell.Services.Pipewire
+import "Theme.js" as T
 
 PanelWindow {
     id: root
@@ -210,22 +211,21 @@ PanelWindow {
         objects: [root.sink, root.source]
     }
 
-    // Menu panel
+    // Menu panel — M3 navigation drawer
     Rectangle {
         id: menuPanel
-        width: 360
+        width: 340
         anchors {
             top: parent.top
             bottom: parent.bottom
             left: parent.left
-            topMargin: 0
-            bottomMargin: 0
-            leftMargin: 0
         }
-        radius: 12
-        color: '#e6000000'
-        border.color: Qt.rgba(1, 1, 1, 0.08)
-        border.width: 2
+        radius: T.radiusPanel
+        topLeftRadius: 0
+        bottomLeftRadius: 0
+        color: T.surface
+        border.color: T.outline
+        border.width: 1
 
         property real slideX: -360
         transform: Translate { x: menuPanel.slideX }
@@ -245,74 +245,22 @@ PanelWindow {
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 14
-            spacing: 12
+            anchors.margins: T.margin
+            spacing: T.gap
 
-            
+            // Header — Material 3 top app bar
+            AppBar {
+                title: "Notifications"
+                showClose: true
+                onCloseClicked: root.dismissed()
 
-            // Header
-            RowLayout {
-                Layout.fillWidth: true
-
-                // Close panel
-                Rectangle {
-                    implicitWidth: 26
-                    implicitHeight: 26
-                    radius: 8
-                    color: closeMouse.containsMouse ? Qt.rgba(1, 0.65, 0.89, 0.175) : Qt.rgba(1, 0.65, 0.89, 0.03)
-                    border.color: Qt.rgba(1, 1, 1, 0.05)
-                    border.width: 1
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "✕"
-                        color: '#f4cde6'
-                        font.pixelSize: 13
-                    }
-
-                    MouseArea {
-                        id: closeMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.dismissed()
-                    }
-                }
-
-                Text {
-                    text: "Notifications"
-                    color: "white"
-                    font.pixelSize: 16
-                    font.bold: true
-                    Layout.fillWidth: true
-                }
-
-                // Clear all
-                Rectangle {
-                    implicitWidth: clearText.implicitWidth + 16
-                    implicitHeight: 26
-                    radius: 8
-                    color: clearMouse.containsMouse ? Qt.rgba(1, 0.65, 0.89, 0.175) : Qt.rgba(1, 0.65, 0.89, 0.03)
-                    border.color: Qt.rgba(1, 1, 1, 0.05)
-                    border.width: 1
-
-                    Text {
-                        id: clearText
-                        anchors.centerIn: parent
-                        text: "Clear all"
-                        color: '#f4cde4'
-                        font.pixelSize: 12
-                    }
-
-                    MouseArea {
-                        id: clearMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            for (let i = notifServer.trackedNotifications.values.length - 1; i >= 0; i--) {
-                                notifServer.trackedNotifications.values[i].dismiss();
-                            }
+                M3Button {
+                    Layout.alignment: Qt.AlignVCenter
+                    variant: "text"
+                    text: "Clear all"
+                    onClicked: {
+                        for (let i = notifServer.trackedNotifications.values.length - 1; i >= 0; i--) {
+                            notifServer.trackedNotifications.values[i].dismiss();
                         }
                     }
                 }
@@ -325,81 +273,79 @@ PanelWindow {
                 onToggled: value => root.doNotDisturb = value
             }
 
-            // Notification list
+            // Notification list — M3 cards
             ListView {
                 id: notifList
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 clip: true
-                spacing: 8
+                spacing: T.gap
                 model: notifServer.trackedNotifications
 
                 delegate: Rectangle {
                     required property var modelData
                     width: notifList.width
-                    height: contentCol.implicitHeight + 16
-                    radius: 8
-                    color: Qt.rgba(1, 0.65, 0.89, 0.03)
-                    border.color: Qt.rgba(1, 1, 1, 0.05)
+                    height: contentCol.implicitHeight + 2 * T.margin
+                    radius: T.radiusCard
+                    color: T.surfaceContainerHigh
 
                     ColumnLayout {
                         id: contentCol
                         anchors.fill: parent
-                        anchors.margins: 10
-                        spacing: 4
+                        anchors.margins: T.margin
+                        spacing: T.gapSmall
 
                         RowLayout {
                             Layout.fillWidth: true
-                            spacing: 6
+                            spacing: T.gap
 
                             // App icon
                             IconImage {
                                 visible: modelData.appIcon !== ""
-                                implicitSize: 16
+                                implicitSize: 18
                                 source: root.resolveIcon(modelData.appIcon)
                             }
 
                             // Fallback icon when no app icon
                             Rectangle {
                                 visible: modelData.appIcon === ""
-                                Layout.preferredWidth: 16
-                                Layout.preferredHeight: 16
-                                radius: 8
-                                color: Qt.rgba(1, 0.65, 0.89, 0.3)
+                                Layout.preferredWidth: 18
+                                Layout.preferredHeight: 18
+                                radius: 9
+                                color: T.secondaryContainerStrong
+
                                 Text {
                                     anchors.centerIn: parent
-                                    text: "🔔"
-                                    font.pixelSize: 9
+                                    text: String.fromCodePoint(0xF009A) // bell
+                                    color: T.onSecondaryContainer
+                                    font.pixelSize: 11
+                                    font.family: T.font
                                 }
                             }
 
                             Text {
-                                text: modelData.appName || "App"
-                                color: "#a6adc8"
-                                font.pixelSize: 11
                                 Layout.fillWidth: true
+                                text: modelData.appName || "App"
+                                color: T.onSurfaceVariant
+                                font.pixelSize: T.labelMedium
+                                font.family: T.font
                                 elide: Text.ElideRight
                             }
 
-                            Text {
-                                text: "✕"
-                                color: "#f38ba8"
-                                font.pixelSize: 12
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    anchors.margins: -6
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: modelData.dismiss()
-                                }
+                            M3IconButton {
+                                size: 28
+                                iconSize: 14
+                                glyph: String.fromCodePoint(0xF0156) // close
+                                onClicked: modelData.dismiss()
                             }
                         }
 
                         Text {
                             text: modelData.summary
-                            color: "white"
-                            font.pixelSize: 13
-                            font.bold: true
+                            color: T.onSurface
+                            font.pixelSize: T.titleMedium
+                            font.weight: Font.Medium
+                            font.family: T.font
                             wrapMode: Text.Wrap
                             Layout.fillWidth: true
                         }
@@ -407,8 +353,9 @@ PanelWindow {
                         Text {
                             visible: modelData.body !== ""
                             text: modelData.body
-                            color: "#bac2de"
-                            font.pixelSize: 12
+                            color: T.onSurfaceVariant
+                            font.pixelSize: T.bodyMedium
+                            font.family: T.font
                             wrapMode: Text.Wrap
                             Layout.fillWidth: true
                             maximumLineCount: 4
@@ -421,22 +368,21 @@ PanelWindow {
                     anchors.centerIn: parent
                     visible: notifList.count === 0
                     text: "No notifications"
-                    color: "#6c7086"
-                    font.pixelSize: 13
+                    color: T.onSurfaceVariant
+                    font.pixelSize: T.bodyMedium
+                    font.family: T.font
                 }
             }
 
-            // Quick settings: volume + brightness
+            // Quick settings
             ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 8
+                spacing: T.gap
 
-                // Quick tiles grid (Android 15 style)
-                Grid {
+                // Quick tiles (Android 15 style wide tiles)
+                ColumnLayout {
                     Layout.fillWidth: true
-                    Layout.alignment: Qt.AlignHCenter
-                    columns: 5
-                    spacing: 6
+                    spacing: T.gap
 
                     Repeater {
                         model: root.quickTiles
@@ -448,10 +394,35 @@ PanelWindow {
                             onClicked: executeAction(modelData.action)
                         }
                     }
+
+                    // Shortcuts: wallpaper + emoji pickers
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: T.gap
+
+                        QuickTile {
+                            icon: String.fromCodePoint(0xF03E) // picture
+                            label: "Wallpaper"
+                            onClicked: {
+                                root.executeAction(["skwd", "wall", "toggle"]);
+                                root.dismissed();
+                            }
+                        }
+
+                        QuickTile {
+                            icon: String.fromCodePoint(0xF118) // smile
+                            label: "Emoji"
+                            onClicked: {
+                                root.executeAction(["rofimoji"]);
+                                root.dismissed();
+                            }
+                        }
+                    }
                 }
 
                 RowLayout {
                     Layout.fillWidth: true
+                    spacing: T.gap
 
                     // Input device
                     DevicePicker {
@@ -515,11 +486,10 @@ PanelWindow {
                     onMoved: v => brightness.setValue(v)
                 }
 
-                // Wi-Fi / Bluetooth panels (Android 12 style wide tiles)
+                // Wi-Fi / Bluetooth quick tiles
                 RowLayout {
                     Layout.fillWidth: true
-                    Layout.topMargin: 2
-                    spacing: 8
+                    spacing: T.gap
 
                     WideToggle {
                         icon: String.fromCodePoint(0xF1EB) // wifi
@@ -550,25 +520,23 @@ PanelWindow {
         property real max: 1
         property real value: 0
         property bool inactive: false
-        property color accent: '#ffc0f7'
+        property color accent: T.primary
         signal moved(real value)
         signal iconClicked
 
         Layout.fillWidth: true
-        implicitHeight: 38
+        implicitHeight: 32
 
         readonly property real ratio: (value - min) / (max - min)
 
-        // Unfilled pill base
+        // M3 slider track
         Rectangle {
             anchors.fill: parent
             radius: height / 2
-            color: wifiBtnMouse.containsMouse ? Qt.rgba(1, 0.65, 0.89, 0.175) : Qt.rgba(1, 0.65, 0.89, 0.03)
-            border.color: Qt.rgba(1, 1, 1, 0.05)
-            border.width: 1
+            color: hoverArea.containsMouse ? T.surfaceContainerHigh : T.surfaceContainer
         }
 
-        // Fill — proportional to the value, like Android's quick-settings pill
+        // Active track — proportional to the value
         Rectangle {
             anchors {
                 top: parent.top
@@ -581,32 +549,37 @@ PanelWindow {
             opacity: pill.inactive ? 0.4 : 1.0
         }
 
-        // Icon inside the pill (left)
+        // Icon inside the track (left)
         Text {
             anchors.left: parent.left
-            anchors.leftMargin: 18
+            anchors.leftMargin: 12
             anchors.verticalCenter: parent.verticalCenter
             text: pill.icon
-            color: pill.ratio > 0.075 ? '#000000' : '#c8a6c6'
-            font.pixelSize: 20
-            font.family: "Google Sans Flex"
+            color: pill.ratio > 0.075 ? T.onPrimary : T.onSurfaceVariant
+            font.pixelSize: 18
+            font.family: T.font
         }
 
-        // Value as a number with percent at the end of the pill
+        // Value label (right)
         Text {
             anchors.right: parent.right
-            anchors.rightMargin: 18
+            anchors.rightMargin: 12
             anchors.verticalCenter: parent.verticalCenter
             text: Math.round(pill.ratio * 100) + "%"
-            color: pill.ratio < 0.9 ? "#c8a6c6" : "black"
-            font.pixelSize: 15
-            font.bold: true
-            font.family: "Google Sans Flex"
+            color: pill.ratio < 0.9 ? T.onSurfaceVariant : T.onPrimary
+            font.pixelSize: T.labelLarge
+            font.weight: Font.Medium
+            font.family: T.font
+        }
+
+        MouseArea {
+            id: hoverArea
+            anchors.fill: parent
+            hoverEnabled: true
         }
 
         // Drag / wheel anywhere on the pill
         MouseArea {
-            id: dragArea
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
 
@@ -631,7 +604,7 @@ PanelWindow {
         MouseArea {
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
-            width: 52
+            width: 44
             height: parent.height
             cursorShape: Qt.PointingHandCursor
             onClicked: pill.iconClicked()
@@ -647,16 +620,17 @@ PanelWindow {
         signal select(var node)
 
         Layout.fillWidth: true
-        spacing: 4
+        spacing: T.gapSmall
 
         function displayName(node) {
             return node && node.description ? node.description : (node ? node.name : "");
         }
 
+        // Expanded device list — M3 menu items
         ColumnLayout {
             visible: picker.expanded
             Layout.fillWidth: true
-            spacing: 4
+            spacing: 2
 
             Repeater {
                 model: picker.devices
@@ -664,28 +638,31 @@ PanelWindow {
                 delegate: Rectangle {
                     required property var modelData
                     Layout.fillWidth: true
-                    implicitHeight: 30
-                    radius: 6
-                    color: modelData === picker.current ? Qt.rgba(0.55, 0.65, 1.0, 0.2) : (devMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent")
+                    implicitHeight: 38
+                    radius: T.radiusSmall
+                    color: devMouse.containsMouse ? T.surfaceContainer : "transparent"
 
                     RowLayout {
                         anchors.fill: parent
-                        anchors.leftMargin: 14
-                        anchors.rightMargin: 10
+                        anchors.leftMargin: T.margin
+                        anchors.rightMargin: T.margin
+                        spacing: T.gap
+
+                        Text {
+                            visible: modelData === picker.current
+                            text: String.fromCodePoint(0xF012C) // check
+                            color: T.onSecondaryContainer
+                            font.pixelSize: 14
+                            font.family: T.font
+                        }
 
                         Text {
                             Layout.fillWidth: true
                             text: modelData.description || modelData.name || "Unknown"
-                            color: modelData === picker.current ? "#89b4fa" : "#cdd6f4"
-                            font.pixelSize: 12
+                            color: modelData === picker.current ? T.onSecondaryContainer : T.onSurface
+                            font.pixelSize: T.bodyMedium
+                            font.family: T.font
                             elide: Text.ElideRight
-                        }
-
-                        Text {
-                            visible: modelData === picker.current
-                            text: "✓"
-                            color: "#89b4fa"
-                            font.pixelSize: 12
                         }
                     }
 
@@ -703,38 +680,42 @@ PanelWindow {
             }
         }
 
+        // Selector head
         Rectangle {
             Layout.fillWidth: true
-            implicitHeight: 30
-            radius: 8
-            color: headMouse.containsMouse ? Qt.rgba(1, 0.65, 0.89, 0.175) : Qt.rgba(1, 0.65, 0.89, 0.03)
-            border.color: Qt.rgba(1, 1, 1, 0.05)
-            border.width: 1
+            implicitHeight: 34
+            radius: height / 2
+            color: headMouse.containsMouse ? T.surfaceContainerHighest : T.surfaceContainerHigh
 
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: 10
-                anchors.rightMargin: 10
-                spacing: 6
+                anchors.leftMargin: T.margin
+                anchors.rightMargin: T.margin
+                spacing: T.gap
 
                 Text {
                     text: picker.title
-                    color: "#a6adc8"
-                    font.pixelSize: 12
+                    color: T.onSurfaceVariant
+                    font.pixelSize: T.labelMedium
+                    font.family: T.font
                 }
 
                 Text {
                     Layout.fillWidth: true
                     text: picker.displayName(picker.current) || "—"
-                    color: "white"
-                    font.pixelSize: 12
+                    color: T.onSurface
+                    font.pixelSize: T.bodyMedium
+                    font.family: T.font
                     elide: Text.ElideRight
                 }
 
                 Text {
-                    text: picker.expanded ? "▾" : "▸"
-                    color: "#cdd6f4"
-                    font.pixelSize: 12
+                    text: picker.expanded
+                          ? String.fromCodePoint(0xF013F) // chevron-up
+                          : String.fromCodePoint(0xF0140) // chevron-down
+                    color: T.onSurfaceVariant
+                    font.pixelSize: 14
+                    font.family: T.font
                 }
             }
 
@@ -758,11 +739,11 @@ PanelWindow {
         signal clicked
 
         Layout.fillWidth: true
-        implicitHeight: 62
-        radius: 18
-        color: wide.active ? '#ffc0f7' : (wide.powered ? (wideMouse.containsMouse ? Qt.rgba(1, 0.65, 0.89, 0.28) : Qt.rgba(1, 0.65, 0.89, 0.22)) : (wideMouse.containsMouse ? Qt.rgba(1, 0.65, 0.89, 0.175) : Qt.rgba(1, 0.65, 0.89, 0.03)))
-        border.color: Qt.rgba(1, 1, 1, 0.05)
-        border.width: 1
+        implicitHeight: 52
+        radius: T.radiusCard
+        color: wide.active ? T.primary
+                          : (wide.powered ? T.secondaryContainer
+                                          : (wideMouse.containsMouse ? T.surfaceContainerHigh : T.surfaceContainer))
 
         Behavior on color {
             ColorAnimation { duration: 140 }
@@ -770,15 +751,17 @@ PanelWindow {
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 14
-            anchors.rightMargin: 14
-            spacing: 10
+            anchors.leftMargin: T.margin
+            anchors.rightMargin: T.margin
+            spacing: T.gap
 
             Text {
+                Layout.alignment: Qt.AlignVCenter
                 text: wide.icon
-                color: wide.active ? "black" : (wide.powered ? '#ffd0fa' : '#f4cdf0')
-                font.pixelSize: 22
-                font.family: "Google Sans Flex"
+                color: wide.active ? T.onPrimaryContainer
+                                   : (wide.powered ? T.onSecondaryContainer : T.onSurfaceVariant)
+                font.pixelSize: 20
+                font.family: T.font
             }
 
             ColumnLayout {
@@ -788,19 +771,19 @@ PanelWindow {
                 Text {
                     Layout.fillWidth: true
                     text: wide.title
-                    color: wide.active ? "black" : "white"
-                    font.pixelSize: 13
-                    font.bold: true
-                    font.family: "Google Sans Flex"
+                    color: wide.active ? T.onPrimaryContainer : T.onSurface
+                    font.pixelSize: T.labelLarge
+                    font.weight: Font.Medium
+                    font.family: T.font
                     elide: Text.ElideRight
                 }
 
                 Text {
                     Layout.fillWidth: true
                     text: wide.subtitle
-                    color: wide.active ? Qt.rgba(0, 0, 0, 0.7) : '#c8a6c0'
-                    font.pixelSize: 11
-                    font.family: "Google Sans Flex"
+                    color: wide.active ? Qt.rgba(0.2, 0, 0.16, 0.72) : T.onSurfaceVariant
+                    font.pixelSize: T.bodySmall
+                    font.family: T.font
                     elide: Text.ElideRight
                 }
             }
@@ -821,33 +804,31 @@ PanelWindow {
         property string label: ""
         signal clicked
 
-        width: 60
-        height: 60
-        radius: 8
-        color: tileMouse.containsMouse ? Qt.rgba(1, 0.65, 0.89, 0.175) : Qt.rgba(1, 0.65, 0.89, 0.03)
-        border.color: Qt.rgba(1, 1, 1, 0.05)
-        border.width: 1
+        Layout.fillWidth: true
+        implicitHeight: 44
+        radius: 22
+        color: tileMouse.containsMouse ? T.surfaceContainerHigh : T.surfaceContainer
 
-        Column {
-            anchors.centerIn: parent
-            spacing: 4
+        RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 14
+            anchors.rightMargin: 14
+            spacing: T.gap
 
             Text {
-                anchors.horizontalCenter: parent.horizontalCenter
                 text: tile.icon
-                color: '#ffbee6'
-                font.pixelSize: 20
-                font.family: "Google Sans Flex"
+                color: T.onSecondaryContainer
+                font.pixelSize: 18
+                font.family: T.font
             }
 
             Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: 58
+                Layout.fillWidth: true
                 text: tile.label
-                color: '#f4cdf0'
-                font.pixelSize: 9
-                font.family: "Google Sans Flex"
-                horizontalAlignment: Text.AlignHCenter
+                color: T.onSurface
+                font.pixelSize: T.labelLarge
+                font.weight: Font.Medium
+                font.family: T.font
                 elide: Text.ElideRight
             }
         }

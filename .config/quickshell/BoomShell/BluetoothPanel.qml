@@ -1,8 +1,8 @@
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Controls
 import Quickshell
 import Quickshell.Bluetooth
+import "Theme.js" as T
 
 PanelWindow {
     id: root
@@ -91,25 +91,30 @@ PanelWindow {
         }
     }
 
+    // Maximum height for the device list before it starts scrolling
+    readonly property real maxListHeight: Math.max(200, root.height * 0.55)
+
     // Click outside → close
     MouseArea {
         anchors.fill: parent
         onClicked: root.dismissed()
     }
 
-    // Panel background
+    // Panel background — M3 bottom sheet, content stacks upward from the bottom
     Rectangle {
         id: panel
-        width: 360
+        width: 340
         anchors {
-            top: parent.top
             bottom: parent.bottom
             left: parent.left
         }
-        radius: 12
-        color: Qt.rgba(0, 0, 0, 0.9)
-        border.color: Qt.rgba(1, 1, 1, 0.08)
-        border.width: 2
+        height: Math.min(parent.height, contentLayout.implicitHeight + 2 * T.margin)
+        radius: 24
+        bottomLeftRadius: 0
+        bottomRightRadius: 0
+        color: T.surface
+        border.color: T.outline
+        border.width: 1
 
         property real slideX: -360
         transform: Translate { x: panel.slideX }
@@ -128,51 +133,19 @@ PanelWindow {
         }
 
         ColumnLayout {
+            id: contentLayout
             anchors.fill: parent
-            anchors.margins: 14
-            spacing: 5
+            anchors.margins: T.margin
+            spacing: T.gap
 
-            RowLayout {
-                Layout.fillWidth: true
-
-                // Close panel
-                Rectangle {
-                    implicitWidth: 26
-                    implicitHeight: 26
-                    radius: 8
-                    color: closeMouse.containsMouse ? Qt.rgba(1, 0.65, 0.89, 0.175) : Qt.rgba(1, 0.65, 0.89, 0.03)
-                    border.color: Qt.rgba(1, 1, 1, 0.05)
-                    border.width: 1
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "✕"
-                        color: "#cdd6f4"
-                        font.pixelSize: 13
-                    }
-
-                    MouseArea {
-                        id: closeMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.dismissed()
-                    }
-                }
-
-                Text {
-                    text: "Bluetooth"
-                    color: "white"
-                    font.pixelSize: 16
-                    font.bold: true
-                    // Layout.fillWidth: true
-                }
+            AppBar {
+                title: "Bluetooth"
+                showClose: true
+                onCloseClicked: root.dismissed()
 
                 Toggle {
                     id: btToggle
-                    label: ""
-                    color: Qt.rgba(0, 0, 0, 0)
-                    border.width: 0
+                    compact: true
                     checked: root.adapter ? root.adapter.enabled : false
                     onToggled: value => {
                         if (root.adapter)
@@ -183,29 +156,29 @@ PanelWindow {
 
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 8
+                spacing: T.gap
 
-                ChipToggle {
+                M3Chip {
                     label: "Discoverable"
-                    checked: root.adapter ? root.adapter.discoverable : false
+                    selected: root.adapter ? root.adapter.discoverable : false
                     onToggled: value => {
                         if (root.adapter)
                             root.adapter.discoverable = value
                     }
                 }
 
-                ChipToggle {
+                M3Chip {
                     label: "Pairable"
-                    checked: root.adapter ? root.adapter.pairable : false
+                    selected: root.adapter ? root.adapter.pairable : false
                     onToggled: value => {
                         if (root.adapter)
                             root.adapter.pairable = value
                     }
                 }
 
-                ChipToggle {
+                M3Chip {
                     label: "Scan"
-                    checked: root.adapter ? root.adapter.discovering : false
+                    selected: root.adapter ? root.adapter.discovering : false
                     onToggled: value => {
                         if (root.adapter)
                             root.adapter.discovering = value
@@ -216,9 +189,9 @@ PanelWindow {
             ListView {
                 id: deviceList
                 Layout.fillWidth: true
-                Layout.fillHeight: true
+                Layout.preferredHeight: Math.min(Math.max(deviceList.contentHeight, 80), root.maxListHeight)
                 clip: true
-                spacing: 8
+                spacing: T.gapSmall
                 model: root.devices
 
                 delegate: Rectangle {
@@ -238,33 +211,44 @@ PanelWindow {
                     }
 
                     width: deviceList.width
-                    height: content.implicitHeight + 12
-                    radius: 8
-                    color: device.connected ? Qt.rgba(1, 0.58, 0.89) : Qt.rgba(1, 1, 1, 0.05)
+                    height: contentCol.implicitHeight + 2 * T.margin
+                    radius: T.radiusCard
+                    color: device.connected ? T.secondaryContainer
+                                            : (delegateMouse.containsMouse ? T.surfaceContainer : "transparent")
+
+                    MouseArea {
+                        id: delegateMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.activeDevice = (root.activeDevice === device) ? null : device
+                    }
 
                     ColumnLayout {
-                        id: content
+                        id: contentCol
                         anchors.fill: parent
-                        anchors.margins: 8
-                        spacing: 6
+                        anchors.margins: T.margin
+                        spacing: T.gapLarge
 
                         RowLayout {
                             Layout.fillWidth: true
-                            spacing: 10
+                            spacing: T.gap
 
-                            // Device icon (first letter)
+                            // Device avatar (first letter)
                             Rectangle {
-                                width: 30
-                                height: 30
-                                radius: 8
-                                color: device.connected ? '#ffd0fa' : '#382432'
+                                Layout.alignment: Qt.AlignVCenter
+                                width: 32
+                                height: 32
+                                radius: 16
+                                color: device.connected ? T.primaryContainer : T.surfaceContainerHigh
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: device.name ? device.name.charAt(0).toUpperCase() : "?"
-                                    color: device.connected ? "black" : '#f4cdf0'
-                                    font.pixelSize: 14
-                                    font.bold: true
+                                    color: device.connected ? T.onPrimaryContainer : T.onSecondaryContainer
+                                    font.pixelSize: T.titleMedium
+                                    font.weight: Font.Medium
+                                    font.family: T.font
                                 }
                             }
 
@@ -275,70 +259,39 @@ PanelWindow {
                                 Text {
                                     Layout.fillWidth: true
                                     text: device.name || device.address || "Unknown"
-                                    color: "white"
-                                    font.pixelSize: 13
-                                    font.bold: device.connected
+                                    color: device.connected ? T.onSecondaryContainer : T.onSurface
+                                    font.pixelSize: T.titleMedium
+                                    font.weight: Font.Medium
+                                    font.family: T.font
                                     elide: Text.ElideRight
                                 }
 
                                 Text {
                                     Layout.fillWidth: true
                                     text: deviceDelegate.subtitle
-                                    color: device.connected ? "black" : '#c8a6c0'
-                                    font.pixelSize: 11
+                                    color: T.onSurfaceVariant
+                                    font.pixelSize: T.bodyMedium
+                                    font.family: T.font
                                     elide: Text.ElideRight
                                 }
                             }
 
-                            // Connect / disconnect
-                            Rectangle {
-                                implicitWidth: actionText.implicitWidth + 16
-                                implicitHeight: 26
-                                radius: 6
-                                color: device.connected
-                                       ? Qt.rgba(0.82, 0.2, 0.3)
-                                       : (actionMouse.containsMouse ? Qt.rgba(1, 0.65, 0.89, 0.28) : Qt.rgba(1, 0.65, 0.89, 0.16))
-
-                                Text {
-                                    id: actionText
-                                    anchors.centerIn: parent
-                                    text: device.connected ? "Disconnect" : (busy ? "…" : "Connect")
-                                    color: device.connected ? '#fff2f5' : '#fa8994'
-                                    font.pixelSize: 12
-                                }
-
-                                MouseArea {
-                                    id: actionMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: root.handleAction(device)
-                                }
+                            M3Button {
+                                Layout.alignment: Qt.AlignVCenter
+                                compact: true
+                                variant: device.connected ? "error" : "tonal"
+                                text: device.connected ? "Disconnect" : (deviceDelegate.busy ? "…" : "Connect")
+                                onClicked: root.handleAction(device)
                             }
 
-                            // Expand details
-                            Rectangle {
-                                implicitWidth: 26
-                                implicitHeight: 26
-                                radius: 6
-                                color: expandMouse.containsMouse ? Qt.rgba(1, 0.65, 0.89, 0.175) : Qt.rgba(1, 0.65, 0.89, 0.03)
-                                border.color: Qt.rgba(1, 1, 1, 0.05)
-                                border.width: 1
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: root.activeDevice === device ? "▾" : "▸"
-                                    color: "#cdd6f4"
-                                    font.pixelSize: 12
-                                }
-
-                                MouseArea {
-                                    id: expandMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: root.activeDevice = (root.activeDevice === device) ? null : device
-                                }
+                            Text {
+                                Layout.alignment: Qt.AlignVCenter
+                                text: root.activeDevice === device
+                                      ? String.fromCodePoint(0xF013F) // chevron-up
+                                      : String.fromCodePoint(0xF0140) // chevron-down
+                                color: T.onSurfaceVariant
+                                font.pixelSize: 14
+                                font.family: T.font
                             }
                         }
 
@@ -346,13 +299,14 @@ PanelWindow {
                         ColumnLayout {
                             Layout.fillWidth: true
                             visible: root.activeDevice === device
-                            spacing: 6
+                            spacing: T.gap
 
                             Text {
                                 Layout.fillWidth: true
                                 text: device.address
-                                color: "#6c7086"
-                                font.pixelSize: 11
+                                color: T.onSurfaceVariant
+                                font.pixelSize: T.bodySmall
+                                font.family: T.font
                                 elide: Text.ElideRight
                             }
 
@@ -360,17 +314,19 @@ PanelWindow {
                                 Layout.fillWidth: true
                                 visible: device.batteryAvailable
                                 text: "Battery: " + Math.round(device.battery * 100) + "%"
-                                color: '#c8a6c0'
-                                font.pixelSize: 11
+                                color: T.onSurfaceVariant
+                                font.pixelSize: T.bodySmall
+                                font.family: T.font
                             }
 
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
+                                spacing: T.gap
 
-                                SmallButton {
-                                    label: device.paired || device.bonded ? "Forget" : "Pair"
-                                    active: false
+                                M3Button {
+                                    Layout.fillWidth: true
+                                    variant: (device.paired || device.bonded) ? "outlined" : "tonal"
+                                    text: (device.paired || device.bonded) ? "Forget" : "Pair"
                                     onClicked: {
                                         if (device.paired || device.bonded)
                                             device.forget()
@@ -379,15 +335,17 @@ PanelWindow {
                                     }
                                 }
 
-                                SmallButton {
-                                    label: device.trusted ? "Untrust" : "Trust"
-                                    active: device.trusted
+                                M3Button {
+                                    Layout.fillWidth: true
+                                    variant: device.trusted ? "tonal" : "outlined"
+                                    text: device.trusted ? "Untrust" : "Trust"
                                     onClicked: device.trusted = !device.trusted
                                 }
 
-                                SmallButton {
-                                    label: device.blocked ? "Unblock" : "Block"
-                                    active: device.blocked
+                                M3Button {
+                                    Layout.fillWidth: true
+                                    variant: device.blocked ? "error" : "outlined"
+                                    text: device.blocked ? "Unblock" : "Block"
                                     onClicked: device.blocked = !device.blocked
                                 }
                             }
@@ -399,75 +357,11 @@ PanelWindow {
                     anchors.centerIn: parent
                     visible: deviceList.count === 0
                     text: root.adapter ? "No devices found" : "No Bluetooth adapter"
-                    color: "#6c7086"
-                    font.pixelSize: 13
+                    color: T.onSurfaceVariant
+                    font.pixelSize: T.bodyMedium
+                    font.family: T.font
                 }
             }
-        }
-    }
-
-
-
-    component SmallButton: Rectangle {
-        id: smallButton
-        property string label: ""
-        property bool active: false
-        signal clicked()
-
-        Layout.fillWidth: true
-        implicitHeight: 28
-        radius: 6
-        color: active
-               ? Qt.rgba(1, 0.65, 0.89, 0.22)
-               : (btnMouse.containsMouse ? Qt.rgba(1, 0.65, 0.89, 0.175) : Qt.rgba(1, 0.65, 0.89, 0.03))
-        border.color: Qt.rgba(1, 1, 1, 0.05)
-        border.width: 1
-
-        Text {
-            id: labelText
-            anchors.centerIn: parent
-            text: label
-            color: active ? '#ffd0fa' : '#f4cdf0'
-            font.pixelSize: 12
-        }
-
-        MouseArea {
-            id: btnMouse
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: smallButton.clicked()
-        }
-    }
-
-    component ChipToggle: Rectangle {
-        id: chip
-        property string label: ""
-        property bool checked: false
-        signal toggled(bool value)
-
-        Layout.fillWidth: true
-        implicitHeight: 32
-        radius: 6
-        color: chip.checked
-               ? Qt.rgba(1, 0.65, 0.89, 0.22)
-               : (chipMouse.containsMouse ? Qt.rgba(1, 0.65, 0.89, 0.175) : Qt.rgba(1, 0.65, 0.89, 0.03))
-        border.color: Qt.rgba(1, 1, 1, 0.05)
-        border.width: 1
-
-        Text {
-            anchors.centerIn: parent
-            text: chip.label
-            color: chip.checked ? '#ffd0fa' : '#f4cdf0'
-            font.pixelSize: 11
-        }
-
-        MouseArea {
-            id: chipMouse
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: chip.toggled(!chip.checked)
         }
     }
 }

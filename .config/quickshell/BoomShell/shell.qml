@@ -17,6 +17,7 @@ Scope {
     property var activeTrayItem: null
     property int activeTrayY: 0
     property var now: new Date()
+    readonly property int notifCount: notifServer.trackedNotifications.values.length
 
     property var _pendingTray: null
     property int _pendingTrayY: 0
@@ -377,7 +378,6 @@ Scope {
                 id: wifiBtn
                 Layout.preferredWidth: 32
                 Layout.preferredHeight: 32
-                Layout.bottomMargin: 1
                 Layout.alignment: Qt.AlignHCenter
                 radius: 8
                 color: wifiBtnMouse.containsMouse ? Qt.rgba(1, 0.65, 0.89, 0.175) : Qt.rgba(1, 0.65, 0.89, 0.03)
@@ -409,6 +409,61 @@ Scope {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: root.toggleWifi()
+                }
+            }
+
+            // Notification button — opens the start menu (notifications)
+            Rectangle {
+                id: notifBtn
+                Layout.preferredWidth: 32
+                Layout.preferredHeight: 32
+                Layout.bottomMargin: 1
+                Layout.alignment: Qt.AlignHCenter
+                radius: 8
+                color: notifBtnMouse.containsMouse ? Qt.rgba(1, 0.65, 0.89, 0.175) : Qt.rgba(1, 0.65, 0.89, 0.03)
+                border.color: Qt.rgba(1, 1, 1, 0.05)
+                border.width: 1
+
+                Text {
+                    anchors.centerIn: parent
+                    text: String.fromCodePoint(0xF009A) // nerd font: bell
+                    font.pixelSize: 15
+                    color: "#ffd0fa"
+                    font.family: "Google Sans Flex"
+                }
+
+                // Unread count badge
+                Rectangle {
+                    id: notifBadge
+                    visible: root.notifCount > 0
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.rightMargin: -3
+                    anchors.topMargin: -3
+                    width: Math.max(14, badgeText.implicitWidth + 8)
+                    height: 14
+                    radius: 7
+                    color: "#f38ba8"
+                    border.color: Qt.rgba(0, 0, 0, 0.6)
+                    border.width: 1
+
+                    Text {
+                        id: badgeText
+                        anchors.centerIn: parent
+                        text: root.notifCount > 99 ? "99+" : String(root.notifCount)
+                        color: "black"
+                        font.pixelSize: 9
+                        font.bold: true
+                        font.family: "Google Sans Flex"
+                    }
+                }
+
+                MouseArea {
+                    id: notifBtnMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.toggleStart()
                 }
             }
         }

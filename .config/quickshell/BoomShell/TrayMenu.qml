@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Widgets
+import "Theme.js" as T
 
 PopupWindow {
     id: root
@@ -18,8 +19,8 @@ PopupWindow {
     color: "transparent"
     grabFocus: true
 
-    implicitWidth: 280
-    implicitHeight: 420
+    implicitWidth: 260
+    implicitHeight: 360
 
     anchor.item: root.anchorItem
     anchor.rect.x: 0
@@ -85,10 +86,10 @@ PopupWindow {
     Rectangle {
         id: panel
         anchors.fill: parent
-        radius: 12
-        color: Qt.rgba(0, 0, 0, 0.92)
-        border.color: Qt.rgba(1, 1, 1, 0.08)
-        border.width: 2
+        radius: T.radiusPanel
+        color: T.surface
+        border.color: T.outline
+        border.width: 1
 
         property real slideX: 0
         transform: Translate { x: panel.slideX }
@@ -99,53 +100,53 @@ PopupWindow {
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 12
-            spacing: 8
+            anchors.margins: T.gap
+            spacing: 2
 
-            RowLayout {
-                Layout.fillWidth: true
-
-                Text {
-                    Layout.fillWidth: true
-                    text: root.item ? root.item.title : ""
-                    color: "white"; font.pixelSize: 14; font.bold: true
-                    elide: Text.ElideRight
-                }
-
-                Rectangle {
-                    implicitWidth: 24; implicitHeight: 24; radius: 6
-                    color: closeMouse.containsMouse
-                        ? Qt.rgba(1, 0.65, 0.89, 0.175) : Qt.rgba(1, 0.65, 0.89, 0.03)
-                    border.color: Qt.rgba(1, 1, 1, 0.05); border.width: 1
-                    Text {
-                        anchors.centerIn: parent; text: "✕"
-                        color: '#ffd0fa'; font.pixelSize: 12
-                    }
-                    MouseArea {
-                        id: closeMouse; anchors.fill: parent; hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            root.closing = true
-                            closeSlideTimer.restart()
-                            dismissTimer.restart()
-                        }
-                    }
+            AppBar {
+                title: root.item ? root.item.title : ""
+                titleSize: 20
+                showClose: true
+                onCloseClicked: {
+                    root.closing = true
+                    closeSlideTimer.restart()
+                    dismissTimer.restart()
                 }
             }
 
+            // Back to main menu
             Rectangle {
-                Layout.fillWidth: true; implicitHeight: 28; radius: 6
+                Layout.fillWidth: true
+                implicitHeight: 38
+                radius: T.radiusSmall
                 visible: root.inSubmenu
-                color: backMouse.containsMouse
-                    ? Qt.rgba(1, 0.65, 0.89, 0.175) : Qt.rgba(1, 0.65, 0.89, 0.03)
-                border.color: Qt.rgba(1, 1, 1, 0.05); border.width: 1
-                Row {
-                    anchors.centerIn: parent; spacing: 6
-                    Text { text: "←"; color: '#ffd0fa'; font.pixelSize: 12 }
-                    Text { text: "Back"; color: '#ffd0fa'; font.pixelSize: 12 }
+                color: backMouse.containsMouse ? T.surfaceContainer : "transparent"
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 10
+                    anchors.rightMargin: 10
+                    spacing: T.gap
+
+                    Text {
+                        text: String.fromCodePoint(0xF004D) // arrow-left
+                        color: T.onSecondaryContainer
+                        font.pixelSize: 16
+                        font.family: T.font
+                    }
+
+                    Text {
+                        text: "Back"
+                        color: T.onSurface
+                        font.pixelSize: T.labelLarge
+                        font.family: T.font
+                    }
                 }
+
                 MouseArea {
-                    id: backMouse; anchors.fill: parent; hoverEnabled: true
+                    id: backMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: root.currentMenu = root.item ? root.item.menu : null
                 }
@@ -153,8 +154,10 @@ PopupWindow {
 
             ListView {
                 id: menuList
-                Layout.fillWidth: true; Layout.fillHeight: true
-                clip: true; spacing: 2
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                spacing: 2
                 model: menuOpener.children
 
                 delegate: Rectangle {
@@ -162,46 +165,70 @@ PopupWindow {
                     required property var modelData
                     readonly property var entry: modelData
                     width: menuList.width
-                    height: entry.isSeparator ? 9 : 30; radius: 6
+                    height: entry.isSeparator ? 7 : 38
+                    radius: T.radiusSmall
                     color: !entry.isSeparator && itemMouse.containsMouse
-                        ? Qt.rgba(1, 0.65, 0.89, 0.175) : "transparent"
+                        ? T.surfaceContainer : "transparent"
 
                     Rectangle {
                         visible: entry.isSeparator
                         anchors.verticalCenter: parent.verticalCenter
                         width: parent.width; height: 1
-                        color: Qt.rgba(1, 1, 1, 0.12)
+                        color: T.outlineVariant
                     }
 
                     RowLayout {
                         visible: !entry.isSeparator
                         anchors.fill: parent
-                        anchors.leftMargin: 8; anchors.rightMargin: 8; spacing: 8
+                        anchors.leftMargin: 10
+                        anchors.rightMargin: 10
+                        spacing: T.gap
 
                         Text {
                             visible: entry.buttonType !== QsMenuButtonType.None
-                            text: entry.checkState === Qt.Checked ? "✓"
-                                : (entry.buttonType === QsMenuButtonType.RadioButton ? "○" : "□")
-                            color: entry.enabled ? '#ffd0fa' : '#6c7086'; font.pixelSize: 12
+                            text: {
+                                if (entry.checkState === Qt.Checked)
+                                    return String.fromCodePoint(0xF012C); // check
+                                if (entry.buttonType === QsMenuButtonType.RadioButton)
+                                    return String.fromCodePoint(0xF043D); // radio-blank
+                                return String.fromCodePoint(0xF0131); // checkbox-blank
+                            }
+                            color: entry.enabled ? T.onSecondaryContainer : T.disabled
+                            font.pixelSize: 14
+                            font.family: T.font
                         }
+
                         IconImage {
-                            visible: entry.icon !== ""; implicitSize: 16; source: entry.icon
+                            visible: entry.icon !== ""
+                            implicitSize: 16
+                            source: entry.icon
                         }
+
                         Text {
-                            Layout.fillWidth: true; text: entry.text
-                            color: entry.enabled ? "white" : '#6c7086'
-                            font.pixelSize: 12; elide: Text.ElideRight
+                            Layout.fillWidth: true
+                            text: entry.text
+                            color: entry.enabled ? T.onSurface : T.disabled
+                            font.pixelSize: T.labelLarge
+                            font.family: T.font
+                            elide: Text.ElideRight
                         }
+
                         Text {
-                            visible: entry.hasChildren; text: "▸"
-                            color: '#c8a6c6'; font.pixelSize: 12
+                            visible: entry.hasChildren
+                            text: String.fromCodePoint(0xF0142) // chevron-right
+                            color: T.onSurfaceVariant
+                            font.pixelSize: 14
+                            font.family: T.font
                         }
                     }
 
                     MouseArea {
-                        id: itemMouse; visible: !entry.isSeparator
-                        anchors.fill: parent; hoverEnabled: true
-                        enabled: entry.enabled; cursorShape: Qt.PointingHandCursor
+                        id: itemMouse
+                        visible: !entry.isSeparator
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        enabled: entry.enabled
+                        cursorShape: Qt.PointingHandCursor
                         onClicked: {
                             if (entry.hasChildren) {
                                 root.currentMenu = entry
