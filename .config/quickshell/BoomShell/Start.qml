@@ -74,6 +74,7 @@ PanelWindow {
     // Request the Wi-Fi / Bluetooth panels
     signal wifiRequested
     signal bluetoothRequested
+    signal emojiRequested
 
     // Quick tiles with actions
     readonly property var quickTiles: [
@@ -413,7 +414,7 @@ PanelWindow {
                             icon: String.fromCodePoint(0xF118) // smile
                             label: "Emoji"
                             onClicked: {
-                                root.executeAction(["rofimoji"]);
+                                root.emojiRequested();
                                 root.dismissed();
                             }
                         }
