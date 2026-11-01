@@ -641,6 +641,7 @@ Scope {
             if (root.launcherOpen)
                 root.closeAllPanels()
         }
+        onCopied: text => osd.show(String.fromCodePoint(0xF012C), "Copied " + text)
     }
 
     TrayMenu {

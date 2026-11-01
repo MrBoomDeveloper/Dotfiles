@@ -18,7 +18,8 @@ PanelWindow {
     // Filter state
     property alias query: search.text
     property int selected: 0
-    property bool shown: false
+    property bool closing: false
+    property bool panelVisible: false
     property bool loading: false
     property bool _pendingReload: false
     property var items: []
@@ -128,20 +129,43 @@ PanelWindow {
 
     onOpenChanged: {
         if (root.open) {
+            root.closing = false
+            root.panelVisible = true
+            hideTimer.stop()
+            // Park the panel below the screen without animating, then fly in.
+            panel.sliding = false
+            panel.slide = 1
             root.query = ""
             root.selected = 0
-            root.shown = false
             showTimer.restart()
             focusTimer.restart()
             scrollTimer.restart()
             root.load()
+        } else if (root.panelVisible && !root.closing) {
+            root.closing = true
+            panel.sliding = true
+            panel.slide = 1
+            hideTimer.restart()
         }
     }
 
     Timer {
         id: showTimer
         interval: 0
-        onTriggered: root.shown = true
+        onTriggered: {
+            panel.sliding = true
+            panel.slide = 0
+        }
+    }
+
+    // Window has to outlive the fly-out animation.
+    Timer {
+        id: hideTimer
+        interval: 120
+        onTriggered: {
+            root.panelVisible = false
+            root.closing = false
+        }
     }
 
     Timer {
@@ -229,7 +253,7 @@ PanelWindow {
         id: pruneProc
     }
 
-    visible: root.open
+    visible: root.open || root.panelVisible
     color: "transparent"
     focusable: root.open
     exclusionMode: ExclusionMode.Ignore
@@ -245,6 +269,7 @@ PanelWindow {
     // Click outside → close
     MouseArea {
         anchors.fill: parent
+        enabled: root.open
         onClicked: root.dismissed()
     }
 
@@ -257,17 +282,18 @@ PanelWindow {
         color: T.surface
         border.color: T.outline
         border.width: 1
-        opacity: root.shown ? 1 : 0
-        scale: root.shown ? 1 : 0.97
 
-        Behavior on opacity {
-            NumberAnimation { duration: 120 }
-        }
+        // 0 = resting in the middle of the screen, 1 = parked below the bottom edge.
+        property real slide: 1
+        property bool sliding: false
+        readonly property real slideDistance: (root.height + height) / 2 + 24
+        transform: Translate { y: panel.slide * panel.slideDistance }
 
-        Behavior on scale {
+        Behavior on slide {
+            enabled: panel.sliding
             NumberAnimation {
-                duration: 140
-                easing.type: Easing.OutCubic
+                duration: root.closing ? 110 : 160
+                easing.type: root.closing ? Easing.InCubic : Easing.OutCubic
             }
         }
 

@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Widgets
 import Quickshell.Io
 import "Theme.js" as T
+import "MathEval.js" as M
 
 // Application launcher: searches .desktop entries and launches them.
 // Right-click opens a menu to hide an app or reveal its shortcut file.
@@ -15,11 +16,13 @@ PanelWindow {
     property bool open: false
     signal dismissed()
     signal launched()
+    signal copied(string text)
 
     // Filter state
     property alias query: search.text
     property int selected: 0
-    property bool shown: false
+    property bool closing: false
+    property bool panelVisible: false
     property bool loading: false
     property var apps: []
 
@@ -42,8 +45,19 @@ PanelWindow {
         return list
     }
 
+    // Valid formula typed into the search field → { value, text }, else null.
+    readonly property var mathResult: M.evaluate(root.query)
+
     function helper(args) {
         return ["python3", Quickshell.shellDir + "/launcher.py"].concat(args)
+    }
+
+    function copyMath() {
+        if (!root.mathResult)
+            return
+        Quickshell.clipboardText = root.mathResult.text
+        root.copied(root.mathResult.text)
+        root.dismissed()
     }
 
     function load() {
@@ -136,21 +150,44 @@ PanelWindow {
 
     onOpenChanged: {
         if (root.open) {
+            root.closing = false
+            root.panelVisible = true
+            hideTimer.stop()
+            // Park the panel below the screen without animating, then fly in.
+            panel.sliding = false
+            panel.slide = 1
             root.query = ""
             root.selected = 0
             root.menuOpen = false
-            root.shown = false
             showTimer.restart()
             focusTimer.restart()
             scrollTimer.restart()
             root.load()
+        } else if (root.panelVisible && !root.closing) {
+            root.closing = true
+            panel.sliding = true
+            panel.slide = 1
+            hideTimer.restart()
         }
     }
 
     Timer {
         id: showTimer
         interval: 0
-        onTriggered: root.shown = true
+        onTriggered: {
+            panel.sliding = true
+            panel.slide = 0
+        }
+    }
+
+    // Window has to outlive the fly-out animation.
+    Timer {
+        id: hideTimer
+        interval: 120
+        onTriggered: {
+            root.panelVisible = false
+            root.closing = false
+        }
     }
 
     Timer {
@@ -205,7 +242,7 @@ PanelWindow {
         id: revealProc
     }
 
-    visible: root.open
+    visible: root.open || root.panelVisible
     color: "transparent"
     focusable: root.open
     exclusionMode: ExclusionMode.Ignore
@@ -221,6 +258,7 @@ PanelWindow {
     // Click outside → close
     MouseArea {
         anchors.fill: parent
+        enabled: root.open
         onClicked: root.dismissed()
     }
 
@@ -233,17 +271,18 @@ PanelWindow {
         color: T.surface
         border.color: T.outline
         border.width: 1
-        opacity: root.shown ? 1 : 0
-        scale: root.shown ? 1 : 0.97
 
-        Behavior on opacity {
-            NumberAnimation { duration: 120 }
-        }
+        // 0 = resting in the middle of the screen, 1 = parked below the bottom edge.
+        property real slide: 1
+        property bool sliding: false
+        readonly property real slideDistance: (root.height + height) / 2 + 24
+        transform: Translate { y: panel.slide * panel.slideDistance }
 
-        Behavior on scale {
+        Behavior on slide {
+            enabled: panel.sliding
             NumberAnimation {
-                duration: 140
-                easing.type: Easing.OutCubic
+                duration: root.closing ? 110 : 160
+                easing.type: root.closing ? Easing.InCubic : Easing.OutCubic
             }
         }
 
@@ -289,7 +328,12 @@ PanelWindow {
                     font.family: T.font
                     leftPadding: 42
                     rightPadding: root.query.length > 0 ? 42 : T.margin
-                    onAccepted: root.launchSelected()
+                    onAccepted: {
+                        if (root.mathResult)
+                            root.copyMath()
+                        else
+                            root.launchSelected()
+                    }
 
                     Keys.onPressed: event => {
                         if (event.key === Qt.Key_Down) {
@@ -338,6 +382,72 @@ PanelWindow {
                     onClicked: {
                         root.query = ""
                         search.forceActiveFocus()
+                    }
+                }
+            }
+
+            // Live math: a valid formula turns Enter into "copy the answer".
+            Rectangle {
+                visible: root.mathResult !== null
+                Layout.fillWidth: true
+                Layout.preferredHeight: 56
+                radius: T.radiusCard
+                color: mathMouse.containsMouse ? T.secondaryContainerStrong : T.secondaryContainer
+                border.color: T.outline
+                border.width: 1
+
+                MouseArea {
+                    id: mathMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.copyMath()
+                }
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 12
+                    anchors.rightMargin: 12
+                    spacing: 10
+
+                    Rectangle {
+                        Layout.alignment: Qt.AlignVCenter
+                        implicitWidth: 30
+                        implicitHeight: 30
+                        radius: 15
+                        color: T.secondaryContainerStrong
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "="
+                            color: T.onSecondaryContainer
+                            font.pixelSize: 16
+                            font.weight: Font.Medium
+                            font.family: T.font
+                        }
+                    }
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 1
+
+                        Text {
+                            Layout.fillWidth: true
+                            text: root.query.trim() + " = " + (root.mathResult ? root.mathResult.text : "")
+                            color: T.onSurface
+                            font.pixelSize: T.bodyLarge
+                            font.weight: Font.Medium
+                            font.family: T.font
+                            elide: Text.ElideRight
+                        }
+
+                        Text {
+                            Layout.fillWidth: true
+                            text: "Enter copies the result"
+                            color: T.onSurfaceVariant
+                            font.pixelSize: T.labelSmall
+                            font.family: T.font
+                        }
                     }
                 }
             }

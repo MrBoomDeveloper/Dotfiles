@@ -64,7 +64,7 @@ PopupWindow {
 
     Timer {
         id: dismissTimer
-        interval: 220
+        interval: 110
         onTriggered: {
             root.visible = false
             root.closing = false
@@ -95,7 +95,7 @@ PopupWindow {
         transform: Translate { x: panel.slideX }
 
         Behavior on slideX {
-            NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: 100; easing.type: Easing.OutCubic }
         }
 
         ColumnLayout {

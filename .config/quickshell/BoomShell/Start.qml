@@ -48,7 +48,7 @@ PanelWindow {
 
     Timer {
         id: dismissTimer
-        interval: 260
+        interval: 130
         onTriggered: {
             root.visible = false
             root.closing = false
@@ -233,7 +233,7 @@ PanelWindow {
 
         Behavior on slideX {
             NumberAnimation {
-                duration: root.closing ? 200 : 240
+                duration: root.closing ? 100 : 120
                 easing.type: root.closing ? Easing.InCubic : Easing.OutCubic
             }
         }
