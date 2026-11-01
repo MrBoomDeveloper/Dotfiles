@@ -164,13 +164,36 @@ Scope {
         }
     }
 
-    function setWeatherLocation(lat, lon, cityName) {
+    function applyWeatherLocation(lat, lon, cityName) {
         root.weatherLat = lat
         root.weatherLon = lon
         root.weatherCity = cityName
+        root.weatherLocationReady = true
         weatherFetchProc.lat = lat
         weatherFetchProc.lon = lon
         weatherFetchProc.running = true
+    }
+
+    // Called when the user picks a city in the settings dialog — remember it.
+    function setWeatherLocation(lat, lon, cityName) {
+        root.savedLocation = { lat: lat, lon: lon, city: cityName }
+        root.locationInitialized = true
+        root.applyWeatherLocation(lat, lon, cityName)
+        root.scheduleSave()
+    }
+
+    // Restored city wins over IP geolocation; only auto-detect when unset.
+    function initLocation() {
+        if (root.savedLocation.city) {
+            root.locationInitialized = true
+            root.applyWeatherLocation(
+                root.savedLocation.lat, root.savedLocation.lon, root.savedLocation.city)
+            return
+        }
+        if (root.locationInitialized)
+            return
+        root.locationInitialized = true
+        geoProc.running = true
     }
 
     function weatherCodeToText(code) {
@@ -201,6 +224,108 @@ Scope {
 
     // ── Settings state ──
     property bool settingsOpen: false
+
+    // ── Desktop widget settings (persisted to settings.json) ──
+    // "<monitor>/<widget>" → { x, y }: where each widget sits on each screen.
+    property var widgetPositions: ({})
+    // Card surface opacity for both widgets (0.3 … 1.0).
+    property real widgetOpacity: 0.92
+    // Explicitly picked city: { lat, lon, city }. Empty = auto-detect by IP.
+    property var savedLocation: ({})
+    property bool locationInitialized: false
+    // Which widgets are on the desktop. The bare clock starts hidden.
+    property var widgetVisibility: ({ clock: true, weather: true, bareClock: false, visualizer: true })
+    // Per-widget size factor, changed by dragging the corner handle in edit mode.
+    property var widgetSizes: ({ clock: 1.0, weather: 1.0, bareClock: 1.0 })
+    // Bare clock layout: "stacked" (hours / minutes) or "inline" (HH:MM).
+    property string bareClockStyle: "stacked"
+    // Keep the visualizer on screen even when a window covers the desktop
+    property bool visualizerAlwaysOn: false
+
+    readonly property string settingsFile: Quickshell.shellPath("settings.json")
+
+    FileView {
+        id: settingsStore
+        path: root.settingsFile
+        blockLoading: true
+
+        onLoaded: root.readSettings(settingsStore.text())
+    }
+
+    // Coalesce rapid updates (dragging, opacity slider) into a single write
+    Timer {
+        id: saveDebounce
+        interval: 300
+        onTriggered: root.writeSettings()
+    }
+
+    function scheduleSave() {
+        saveDebounce.restart()
+    }
+
+    // Put every widget back into its default corner
+    function resetWidgetPositions() {
+        root.widgetPositions = ({})
+        root.scheduleSave()
+    }
+
+    function widgetVisible(id) {
+        return root.widgetVisibility[id] !== false
+    }
+
+    function setWidgetVisible(id, visible) {
+        const next = Object.assign({}, root.widgetVisibility)
+        next[id] = visible
+        root.widgetVisibility = next
+        root.scheduleSave()
+    }
+
+    function widgetScale(id) {
+        const value = root.widgetSizes[id]
+        return typeof value === "number" ? value : 1
+    }
+
+    function setWidgetScale(id, scale) {
+        const next = Object.assign({}, root.widgetSizes)
+        next[id] = Math.max(0.6, Math.min(4.0, scale))
+        root.widgetSizes = next
+        root.scheduleSave()
+    }
+
+    function readSettings(text) {
+        try {
+            const cfg = JSON.parse(text || "{}")
+            if (cfg.positions && typeof cfg.positions === "object")
+                root.widgetPositions = cfg.positions
+            if (typeof cfg.opacity === "number")
+                root.widgetOpacity = Math.max(0.3, Math.min(1, cfg.opacity))
+            if (cfg.location && cfg.location.city)
+                root.savedLocation = cfg.location
+            if (cfg.visibility && typeof cfg.visibility === "object")
+                root.widgetVisibility = Object.assign({}, root.widgetVisibility, cfg.visibility)
+            if (cfg.sizes && typeof cfg.sizes === "object")
+                root.widgetSizes = Object.assign({}, root.widgetSizes, cfg.sizes)
+            if (typeof cfg.bareClockStyle === "string")
+                root.bareClockStyle = cfg.bareClockStyle
+            if (typeof cfg.visualizerAlwaysOn === "boolean")
+                root.visualizerAlwaysOn = cfg.visualizerAlwaysOn
+        } catch (e) {
+            console.log("Settings parse error:", e)
+        }
+    }
+
+    function writeSettings() {
+        const cfg = {
+            positions: root.widgetPositions,
+            opacity: root.widgetOpacity,
+            location: root.savedLocation,
+            visibility: root.widgetVisibility,
+            sizes: root.widgetSizes,
+            bareClockStyle: root.bareClockStyle,
+            visualizerAlwaysOn: root.visualizerAlwaysOn
+        }
+        settingsStore.setText(JSON.stringify(cfg, null, 2))
+    }
 
     // ── Per-screen desktop widgets ──
     Variants {
@@ -242,25 +367,78 @@ Scope {
                 return root.monitorWindowCounts[monitorName] || 0
             }
 
-            visible: windowCount === 0
+            // Stable key for remembering widget positions on this monitor
+            readonly property string monKey: monitorName || (modelData ? modelData.name : "")
 
-            // ── Clock Widget (top-left area) ──
-            ClockWidget {
-                id: clockWidget
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.topMargin: 60
-                anchors.leftMargin: 60
-                currentTime: root.now
+            // True while the active workspace has no windows: the full widget layer shows
+            readonly property bool onEmptyWorkspace: windowCount === 0
+
+            // The visualizer can stay on screen even when a window covers the desktop
+            visible: onEmptyWorkspace || root.visualizerAlwaysOn
+
+            // ── Widget placement ──
+            readonly property int widgetEdge: 56
+
+            function widgetKey(id) {
+                return monKey + "/" + id
             }
 
-            // ── Weather Widget (bottom-right area) ──
+            // Restore a saved position, or fall back to the default corner.
+            function placeWidget(item, id, defaultX, defaultY) {
+                const saved = root.widgetPositions[widgetKey(id)]
+                const maxX = Math.max(0, width - item.width)
+                const maxY = Math.max(0, height - item.height)
+                const x = saved ? saved.x : defaultX
+                const y = saved ? saved.y : defaultY
+                item.x = Math.max(0, Math.min(maxX, x))
+                item.y = Math.max(0, Math.min(maxY, y))
+            }
+
+            function saveWidgetPosition(item, id) {
+                const key = widgetKey(id)
+                const next = Object.assign({}, root.widgetPositions)
+                next[key] = { x: item.x, y: item.y }
+                root.widgetPositions = next
+                root.scheduleSave()
+            }
+
+            function layoutWidgets() {
+                placeWidget(clockWidget, "clock", widgetEdge, widgetEdge)
+                placeWidget(weatherWidget, "weather",
+                    width - weatherWidget.width - widgetEdge,
+                    height - weatherWidget.height - widgetEdge)
+                placeWidget(bareClockWidget, "bareClock",
+                    width - bareClockWidget.width - widgetEdge, widgetEdge)
+            }
+
+            // ── Music visualizer (bottom half, behind everything, never draggable) ──
+            MusicVisualizer {
+                id: musicVisualizer
+                visible: root.widgetVisible("visualizer")
+                        && (desktopPanel.onEmptyWorkspace || root.visualizerAlwaysOn)
+                active: desktopPanel.visible
+                x: 0
+                y: desktopPanel.height / 2
+                width: desktopPanel.width
+                height: desktopPanel.height / 2
+                z: -1
+            }
+
+            // ── Clock Widget (top-left by default) ──
+            ClockWidget {
+                id: clockWidget
+                visible: root.widgetVisible("clock") && desktopPanel.onEmptyWorkspace
+                currentTime: root.now
+                surfaceOpacity: root.widgetOpacity
+                uiScale: root.widgetScale("clock")
+                onMoved: desktopPanel.saveWidgetPosition(clockWidget, "clock")
+                onResized: scale => root.setWidgetScale("clock", scale)
+            }
+
+            // ── Weather Widget (bottom-right by default) ──
             WeatherWidget {
                 id: weatherWidget
-                anchors.bottom: parent.bottom
-                anchors.right: parent.right
-                anchors.bottomMargin: 60
-                anchors.rightMargin: 60
+                visible: root.widgetVisible("weather") && desktopPanel.onEmptyWorkspace
                 temperature: root.weatherTemp
                 condition: root.weatherCondition
                 icon: root.weatherIcon
@@ -268,21 +446,99 @@ Scope {
                 humidity: root.weatherHumidity
                 wind: root.weatherWind
                 loaded: root.weatherLoaded
+                surfaceOpacity: root.widgetOpacity
+                uiScale: root.widgetScale("weather")
                 onClicked: root.settingsOpen = !root.settingsOpen
+                onMoved: desktopPanel.saveWidgetPosition(weatherWidget, "weather")
+                onResized: scale => root.setWidgetScale("weather", scale)
+                // Content grows once the forecast arrives
+                onHeightChanged: desktopPanel.layoutWidgets()
             }
+
+            // ── Bare clock (top-right by default, hidden until enabled) ──
+            BareClockWidget {
+                id: bareClockWidget
+                visible: root.widgetVisible("bareClock") && desktopPanel.onEmptyWorkspace
+                currentTime: root.now
+                style: root.bareClockStyle
+                uiScale: root.widgetScale("bareClock")
+                onMoved: desktopPanel.saveWidgetPosition(bareClockWidget, "bareClock")
+                onResized: scale => root.setWidgetScale("bareClock", scale)
+            }
+
+            // Reapply after settings arrive, or a widget was moved/resized/toggled
+            Connections {
+                target: root
+                function onWidgetPositionsChanged() { desktopPanel.layoutWidgets() }
+                function onWidgetSizesChanged() { desktopPanel.layoutWidgets() }
+                function onWidgetVisibilityChanged() { desktopPanel.layoutWidgets() }
+            }
+
+            Component.onCompleted: layoutWidgets()
+            onWidthChanged: layoutWidgets()
+            onHeightChanged: layoutWidgets()
         }
     }
 
-    // ── Weather Settings Popup ──
-    WeatherSettings {
+    // ── Settings screen (BoomShell-styled modal panel) ──
+    WidgetSettings {
         open: root.settingsOpen
+        cardOpacity: root.widgetOpacity
+        currentCity: root.weatherCity
+        visibility: root.widgetVisibility
+        bareClockStyle: root.bareClockStyle
+        visualizerAlwaysOn: root.visualizerAlwaysOn
         onDismissed: root.settingsOpen = false
         onLocationSelected: (lat, lon, name) => root.setWeatherLocation(lat, lon, name)
+        onCardOpacityEdited: (value) => {
+            root.widgetOpacity = value
+            root.scheduleSave()
+        }
+        onWidgetVisibilityChanged: (id, value) => root.setWidgetVisible(id, value)
+        onBareClockStylePicked: style => {
+            root.bareClockStyle = style
+            root.scheduleSave()
+        }
+        onVisualizerAlwaysOnToggled: value => {
+            root.visualizerAlwaysOn = value
+            root.scheduleSave()
+        }
+        onResetLayoutRequested: root.resetWidgetPositions()
+    }
+
+    // ── Open the settings screen from outside (desktop entry / rofi) ──
+    Process {
+        id: settingsFlagProc
+        onExited: code => {
+            if (code === 0)
+                root.settingsOpen = !root.settingsOpen
+        }
+    }
+
+    Timer {
+        interval: 200
+        repeat: true
+        running: true
+        onTriggered: {
+            if (settingsFlagProc.running)
+                return
+            settingsFlagProc.exec(["sh", "-c",
+                'if [ -f /tmp/buff_toggle_widget_settings ]; then ' +
+                'rm -f /tmp/buff_toggle_widget_settings; exit 0; fi; exit 1'])
+        }
+    }
+
+    // Apply a city that arrived from disk after the initial location setup
+    onSavedLocationChanged: {
+        const loc = root.savedLocation
+        if (loc && loc.city && (loc.city !== root.weatherCity
+                || loc.lat !== root.weatherLat || loc.lon !== root.weatherLon))
+            root.initLocation()
     }
 
     // Initial fetches
     Component.onCompleted: {
-        geoProc.running = true
+        root.initLocation()
         wsMonitorsProc.running = true
     }
 }

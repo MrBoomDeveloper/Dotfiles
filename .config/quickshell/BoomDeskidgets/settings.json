@@ -1,0 +1,31 @@
+{
+  "positions": {
+    "eDP-1/clock": {
+      "x": 72.90625,
+      "y": 57.21875
+    },
+    "eDP-1/bareClock": {
+      "x": 127.1015625,
+      "y": 54.1484375
+    }
+  },
+  "opacity": 0.3,
+  "location": {
+    "lat": 54.74306,
+    "lon": 55.96779,
+    "city": "Ufa"
+  },
+  "visibility": {
+    "clock": false,
+    "weather": false,
+    "bareClock": true,
+    "visualizer": true
+  },
+  "sizes": {
+    "clock": 1,
+    "weather": 1.0414813701923076,
+    "bareClock": 2.3562650240384615
+  },
+  "bareClockStyle": "stacked",
+  "visualizerAlwaysOn": true
+}

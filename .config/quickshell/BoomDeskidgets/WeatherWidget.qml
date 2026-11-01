@@ -1,6 +1,9 @@
 import QtQuick
 import QtQuick.Layouts
 
+// ── BoomShell-styled weather card ──
+// Left click opens the settings screen; right-click toggles edit mode for
+// moving and resizing the card.
 Item {
     id: weatherRoot
 
@@ -12,144 +15,182 @@ Item {
     required property real wind
     required property bool loaded
 
+    property bool editMode: false
+    property real surfaceOpacity: 0.92
+    property real uiScale: 1.0
+
     signal clicked()
+    signal moved(real x, real y)
+    signal resized(real scale)
 
-    width: 220
-    height: weatherColumn.implicitHeight + 48
+    M3Theme { id: theme }
 
-    // ── M3 Surface card ──
+    readonly property real pad: 24 * uiScale
+
+    width: 240 * uiScale
+    height: content.implicitHeight + pad * 2
+
+    // ── Surface ──
     Rectangle {
         anchors.fill: parent
-        radius: 28
-        color: Qt.rgba(0, 0, 0, 0.45)
-        border.color: Qt.rgba(1, 1, 1, 0.08)
-        border.width: 1
+        radius: theme.radiusPanel
+        color: Qt.rgba(0, 0, 0, weatherRoot.surfaceOpacity)
+        border.width: weatherRoot.editMode ? 2 : 1
+        border.color: weatherRoot.editMode ? theme.primary : theme.outlineVariant
+
+        Behavior on border.color { ColorAnimation { duration: 150 } }
+        Behavior on border.width { NumberAnimation { duration: 150 } }
+
+        // State layer
+        Rectangle {
+            anchors.fill: parent
+            radius: parent.radius
+            color: theme.surfaceText
+            opacity: weatherRoot.editMode
+                ? theme.stateEdit
+                : (interaction.hovered ? theme.stateHover : 0)
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+        }
     }
 
-    // Click to open settings
-    MouseArea {
-        anchors.fill: parent
-        hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
-        onClicked: weatherRoot.clicked()
-    }
+    ColumnLayout {
+        id: content
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.margins: weatherRoot.pad
+        spacing: 2 * weatherRoot.uiScale
 
-    Column {
-        id: weatherColumn
-        anchors.centerIn: parent
-        spacing: 4
-
-        // ── Loading state ──
+        // ── City ──
         Text {
-            anchors.horizontalCenter: parent.horizontalCenter
+            Layout.fillWidth: true
+            text: weatherRoot.city
+            font.family: theme.fontFamily
+            font.pixelSize: theme.labelMedium * weatherRoot.uiScale
+            font.weight: Font.Medium
+            color: theme.primary
+            elide: Text.ElideRight
+        }
+
+        // ── Loading ──
+        Text {
             visible: !weatherRoot.loaded
-            text: "Loading..."
-            font.family: "Google Sans"
-            font.pixelSize: 16
-            color: Qt.rgba(1, 1, 1, 0.5)
+            text: "Loading…"
+            font.family: theme.fontFamily
+            font.pixelSize: theme.bodyLarge * weatherRoot.uiScale
+            color: theme.surfaceVariantText
         }
 
-        // ── Weather content ──
-        Column {
-            anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 6
+        // ── Temperature ──
+        RowLayout {
             visible: weatherRoot.loaded
+            Layout.fillWidth: true
+            Layout.topMargin: 2 * weatherRoot.uiScale
+            spacing: 10 * weatherRoot.uiScale
 
-            // ── City name ──
             Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: weatherRoot.city
-                font.family: "Google Sans"
-                font.pixelSize: 14
-                font.weight: Font.Normal
-                color: Qt.rgba(1, 1, 1, 0.6)
+                text: weatherRoot.icon
+                font.pixelSize: 30 * weatherRoot.uiScale
+                Layout.alignment: Qt.AlignVCenter
             }
 
-            // ── Main temperature + icon row ──
-            Row {
-                anchors.horizontalCenter: parent.horizontalCenter
-                spacing: 8
-                layoutDirection: Qt.RightToLeft
-
-                Text {
-                    text: weatherRoot.icon
-                    font.pixelSize: 40
-                    anchors.baseline: tempText.baseline
-                }
-
-                Text {
-                    id: tempText
-                    text: weatherRoot.temperature
-                    font.family: "Google Sans"
-                    font.pixelSize: 56
-                    font.weight: Font.Light
-                    color: "white"
-                }
-            }
-
-            // ── Condition ──
             Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: weatherRoot.condition
-                font.family: "Google Sans"
-                font.pixelSize: 14
-                font.weight: Font.Normal
-                color: Qt.rgba(1, 1, 1, 0.7)
+                Layout.fillWidth: true
+                text: weatherRoot.temperature
+                font.family: theme.fontFamily
+                font.pixelSize: theme.displayMedium * weatherRoot.uiScale
+                font.weight: Font.Light
+                color: theme.surfaceText
             }
+        }
 
-            // ── Divider ──
+        Text {
+            visible: weatherRoot.loaded
+            Layout.fillWidth: true
+            text: weatherRoot.condition
+            font.family: theme.fontFamily
+            font.pixelSize: theme.bodyMedium * weatherRoot.uiScale
+            color: theme.surfaceVariantText
+            elide: Text.ElideRight
+        }
+
+        // ── Divider ──
+        Rectangle {
+            visible: weatherRoot.loaded
+            Layout.fillWidth: true
+            Layout.topMargin: 10 * weatherRoot.uiScale
+            Layout.bottomMargin: 4 * weatherRoot.uiScale
+            implicitHeight: 1
+            color: theme.outlineVariant
+        }
+
+        // ── Detail chips ──
+        RowLayout {
+            visible: weatherRoot.loaded
+            Layout.fillWidth: true
+            spacing: 8 * weatherRoot.uiScale
+
             Rectangle {
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: weatherRoot.width - 48
-                height: 1
-                color: Qt.rgba(1, 1, 1, 0.1)
-            }
+                Layout.fillWidth: true
+                implicitHeight: 32 * weatherRoot.uiScale
+                radius: theme.radiusChip
+                color: theme.secondaryContainerStrong
 
-            // ── Details row ──
-            RowLayout {
-                anchors.horizontalCenter: parent.horizontalCenter
-                spacing: 24
-
-                // Humidity
-                ColumnLayout {
-                    spacing: 2
+                RowLayout {
+                    anchors.centerIn: parent
+                    spacing: 5 * weatherRoot.uiScale
 
                     Text {
-                        Layout.alignment: Qt.AlignHCenter
                         text: "💧"
-                        font.pixelSize: 14
+                        font.pixelSize: theme.labelMedium * weatherRoot.uiScale
                     }
 
                     Text {
-                        Layout.alignment: Qt.AlignHCenter
                         text: Math.round(weatherRoot.humidity) + "%"
-                        font.family: "Google Sans"
-                        font.pixelSize: 13
-                        font.weight: Font.Normal
-                        color: Qt.rgba(1, 1, 1, 0.6)
+                        font.family: theme.fontFamily
+                        font.pixelSize: theme.labelMedium * weatherRoot.uiScale
+                        font.weight: Font.Medium
+                        color: theme.secondaryContainerText
                     }
                 }
+            }
 
-                // Wind
-                ColumnLayout {
-                    spacing: 2
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: 32 * weatherRoot.uiScale
+                radius: theme.radiusChip
+                color: theme.secondaryContainerStrong
+
+                RowLayout {
+                    anchors.centerIn: parent
+                    spacing: 5 * weatherRoot.uiScale
 
                     Text {
-                        Layout.alignment: Qt.AlignHCenter
                         text: "💨"
-                        font.pixelSize: 14
+                        font.pixelSize: theme.labelMedium * weatherRoot.uiScale
                     }
 
                     Text {
-                        Layout.alignment: Qt.AlignHCenter
                         text: Math.round(weatherRoot.wind) + " km/h"
-                        font.family: "Google Sans"
-                        font.pixelSize: 13
-                        font.weight: Font.Normal
-                        color: Qt.rgba(1, 1, 1, 0.6)
+                        font.family: theme.fontFamily
+                        font.pixelSize: theme.labelMedium * weatherRoot.uiScale
+                        font.weight: Font.Medium
+                        color: theme.secondaryContainerText
                     }
                 }
             }
         }
+    }
+
+    WidgetInteraction {
+        id: interaction
+        anchors.fill: parent
+        target: weatherRoot
+        editMode: weatherRoot.editMode
+        uiScale: weatherRoot.uiScale
+        onEditToggled: weatherRoot.editMode = !weatherRoot.editMode
+        onActivated: weatherRoot.clicked()
+        onMoved: (x, y) => weatherRoot.moved(x, y)
+        onResized: scale => weatherRoot.resized(scale)
     }
 }
