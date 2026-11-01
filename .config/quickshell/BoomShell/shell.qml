@@ -14,6 +14,7 @@ Scope {
     property bool bluetoothOpen: false
     property bool calendarOpen: false
     property bool emojiOpen: false
+    property bool clipboardOpen: false
     property bool trayMenuOpen: false
     property var activeTrayItem: null
     property int activeTrayY: 0
@@ -53,6 +54,7 @@ Scope {
             root.startMenuOpen = false
             root.calendarOpen = false
             root.emojiOpen = false
+            root.clipboardOpen = false
             root.trayMenuOpen = false
             root.activeTrayItem = null
         }
@@ -65,6 +67,7 @@ Scope {
             root.startMenuOpen = false
             root.calendarOpen = false
             root.emojiOpen = false
+            root.clipboardOpen = false
             root.trayMenuOpen = false
             root.activeTrayItem = null
         }
@@ -77,6 +80,7 @@ Scope {
             root.bluetoothOpen = false
             root.calendarOpen = false
             root.emojiOpen = false
+            root.clipboardOpen = false
             root.trayMenuOpen = false
             root.activeTrayItem = null
         }
@@ -89,6 +93,7 @@ Scope {
             root.bluetoothOpen = false
             root.startMenuOpen = false
             root.emojiOpen = false
+            root.clipboardOpen = false
             root.trayMenuOpen = false
             root.activeTrayItem = null
         }
@@ -101,6 +106,20 @@ Scope {
             root.bluetoothOpen = false
             root.startMenuOpen = false
             root.calendarOpen = false
+            root.clipboardOpen = false
+            root.trayMenuOpen = false
+            root.activeTrayItem = null
+        }
+    }
+
+    function toggleClipboard() {
+        root.clipboardOpen = !root.clipboardOpen
+        if (root.clipboardOpen) {
+            root.wifiOpen = false
+            root.bluetoothOpen = false
+            root.startMenuOpen = false
+            root.calendarOpen = false
+            root.emojiOpen = false
             root.trayMenuOpen = false
             root.activeTrayItem = null
         }
@@ -113,6 +132,7 @@ Scope {
             root.bluetoothOpen = false
             root.calendarOpen = false
             root.emojiOpen = false
+            root.clipboardOpen = false
 
             if (root.activeTrayItem !== null) {
                 // Previous open still dirty — force close then reopen
@@ -500,6 +520,7 @@ Scope {
             case 30: root.toggleStart(); break
             case 40: root.toggleCalendar(); break
             case 50: root.toggleEmoji(); break
+            case 60: root.toggleClipboard(); break
             }
         }
     }
@@ -513,20 +534,23 @@ Scope {
             if (flagProc.running) return
             flagProc.exec(["sh", "-c",
                 'if [ -f /tmp/buff_toggle_wifi ]; then ' +
-                'rm -f /tmp/buff_toggle_wifi /tmp/buff_toggle_bluetooth /tmp/buff_toggle_start /tmp/buff_toggle_calendar /tmp/buff_toggle_emoji; ' +
+                'rm -f /tmp/buff_toggle_wifi /tmp/buff_toggle_bluetooth /tmp/buff_toggle_start /tmp/buff_toggle_calendar /tmp/buff_toggle_emoji /tmp/buff_toggle_clipboard; ' +
                 'exit 10; ' +
                 'elif [ -f /tmp/buff_toggle_bluetooth ]; then ' +
-                'rm -f /tmp/buff_toggle_wifi /tmp/buff_toggle_bluetooth /tmp/buff_toggle_start /tmp/buff_toggle_calendar /tmp/buff_toggle_emoji; ' +
+                'rm -f /tmp/buff_toggle_wifi /tmp/buff_toggle_bluetooth /tmp/buff_toggle_start /tmp/buff_toggle_calendar /tmp/buff_toggle_emoji /tmp/buff_toggle_clipboard; ' +
                 'exit 20; ' +
                 'elif [ -f /tmp/buff_toggle_start ]; then ' +
-                'rm -f /tmp/buff_toggle_wifi /tmp/buff_toggle_bluetooth /tmp/buff_toggle_start /tmp/buff_toggle_calendar /tmp/buff_toggle_emoji; ' +
+                'rm -f /tmp/buff_toggle_wifi /tmp/buff_toggle_bluetooth /tmp/buff_toggle_start /tmp/buff_toggle_calendar /tmp/buff_toggle_emoji /tmp/buff_toggle_clipboard; ' +
                 'exit 30; ' +
                 'elif [ -f /tmp/buff_toggle_calendar ]; then ' +
-                'rm -f /tmp/buff_toggle_wifi /tmp/buff_toggle_bluetooth /tmp/buff_toggle_start /tmp/buff_toggle_calendar /tmp/buff_toggle_emoji; ' +
+                'rm -f /tmp/buff_toggle_wifi /tmp/buff_toggle_bluetooth /tmp/buff_toggle_start /tmp/buff_toggle_calendar /tmp/buff_toggle_emoji /tmp/buff_toggle_clipboard; ' +
                 'exit 40; ' +
                 'elif [ -f /tmp/buff_toggle_emoji ]; then ' +
-                'rm -f /tmp/buff_toggle_wifi /tmp/buff_toggle_bluetooth /tmp/buff_toggle_start /tmp/buff_toggle_calendar /tmp/buff_toggle_emoji; ' +
-                'exit 50; fi'])
+                'rm -f /tmp/buff_toggle_wifi /tmp/buff_toggle_bluetooth /tmp/buff_toggle_start /tmp/buff_toggle_calendar /tmp/buff_toggle_emoji /tmp/buff_toggle_clipboard; ' +
+                'exit 50; ' +
+                'elif [ -f /tmp/buff_toggle_clipboard ]; then ' +
+                'rm -f /tmp/buff_toggle_wifi /tmp/buff_toggle_bluetooth /tmp/buff_toggle_start /tmp/buff_toggle_calendar /tmp/buff_toggle_emoji /tmp/buff_toggle_clipboard; ' +
+                'exit 60; fi'])
         }
     }
 
@@ -536,6 +560,7 @@ Scope {
         root.bluetoothOpen = false
         root.calendarOpen = false
         root.emojiOpen = false
+        root.clipboardOpen = false
         root.trayMenuOpen = false
         root.activeTrayItem = null
     }
@@ -586,6 +611,15 @@ Scope {
                 root.closeAllPanels()
         }
         onCopied: emoji => osd.show(emoji, "Copied to clipboard")
+    }
+
+    ClipboardManager {
+        open: root.clipboardOpen
+        onDismissed: {
+            if (root.clipboardOpen)
+                root.closeAllPanels()
+        }
+        onCopied: osd.show(String.fromCodePoint(0xF012C), "Copied to clipboard")
     }
 
     TrayMenu {
