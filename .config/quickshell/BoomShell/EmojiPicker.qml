@@ -98,11 +98,18 @@ PanelWindow {
         grid.positionViewAtIndex(root.selected, GridView.Contain)
     }
 
-    onQueryChanged: root.selected = 0
-    onCategoryChanged: root.selected = 0
+    onQueryChanged: {
+        root.selected = 0
+        scrollTimer.restart()
+    }
+    onCategoryChanged: {
+        root.selected = 0
+        scrollTimer.restart()
+    }
     onResultsChanged: {
         if (root.selected >= root.results.length)
             root.selected = 0
+        scrollTimer.restart()
     }
 
     onOpenChanged: {
@@ -113,6 +120,7 @@ PanelWindow {
             root.shown = false
             showTimer.restart()
             focusTimer.restart()
+            scrollTimer.restart()
         }
     }
 
@@ -126,6 +134,13 @@ PanelWindow {
         id: focusTimer
         interval: 10
         onTriggered: search.forceActiveFocus()
+    }
+
+    // Keep the grid at the top when the picker is reopened or filtered.
+    Timer {
+        id: scrollTimer
+        interval: 0
+        onTriggered: grid.positionViewAtBeginning()
     }
 
     visible: root.open

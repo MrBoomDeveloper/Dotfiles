@@ -94,16 +94,33 @@ PanelWindow {
     }
 
     function removeEntry(id) {
+        // Remove locally right away so the list and counter react instantly.
+        const remaining = []
+        for (let i = 0; i < root.items.length; i++) {
+            if (root.items[i].id !== id)
+                remaining.push(root.items[i])
+        }
+        root.items = remaining
+        if (root.selected >= remaining.length)
+            root.selected = Math.max(0, remaining.length - 1)
+        scrollTimer.restart()
+
         if (!deleteProc.running)
             deleteProc.exec(root.helper(["delete", String(id)]))
     }
 
     function clearAll() {
+        root.items = []
+        root.selected = 0
+        scrollTimer.restart()
         if (!clearProc.running)
             clearProc.exec(root.helper(["clear"]))
     }
 
-    onQueryChanged: root.selected = 0
+    onQueryChanged: {
+        root.selected = 0
+        scrollTimer.restart()
+    }
     onFilteredChanged: {
         if (root.selected >= root.filtered.length)
             root.selected = Math.max(0, root.filtered.length - 1)
@@ -116,6 +133,7 @@ PanelWindow {
             root.shown = false
             showTimer.restart()
             focusTimer.restart()
+            scrollTimer.restart()
             root.load()
         }
     }
@@ -130,6 +148,13 @@ PanelWindow {
         id: focusTimer
         interval: 10
         onTriggered: search.forceActiveFocus()
+    }
+
+    // Keep the list at the top when the panel is reopened or filtered.
+    Timer {
+        id: scrollTimer
+        interval: 0
+        onTriggered: history.positionViewAtBeginning()
     }
 
     // Delete works while the search field has no text to edit.
@@ -164,6 +189,8 @@ PanelWindow {
                 } catch (e) {
                     root.items = []
                 }
+                root.selected = 0
+                scrollTimer.restart()
             }
             if (root._pendingReload) {
                 root._pendingReload = false
@@ -262,7 +289,7 @@ PanelWindow {
 
                 Text {
                     Layout.alignment: Qt.AlignVCenter
-                    text: root.filtered.length + " items"
+                    text: root.items.length + " items"
                     color: T.onSurfaceVariant
                     font.pixelSize: T.labelMedium
                     font.family: T.font
